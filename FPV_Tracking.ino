@@ -19,6 +19,7 @@ unsigned long previousTime = 0;
 unsigned long currentTime = 0;
 unsigned long deltaTime = 0;
 
+#define TASK_50HZ 2
 #define TASK_10HZ 10
 #define TASK_1HZ 100
 
@@ -34,7 +35,7 @@ int rssiTrack = 0;
 int rssiFix = 0;
 int rssiTrackOld = 0;
 int rssiDiv = 0;
-int i = 0;
+int i = horizontalMid;
 int y = 0;
 char horizontalDirection;
 char verticalDirection;
@@ -78,6 +79,10 @@ void loop()
       process100HzTask();
       frameCounter++;
       
+    if(frameCounter % TASK_50HZ == 0) {
+      process50HzTask();  
+    }
+      
       previousTime = currentTime;
     }
     
@@ -94,7 +99,9 @@ void loop()
     }
 }
 
-void process100HzTask() {
+void process100HzTask(){}
+
+void process50HzTask() {
     if(serialHorizontalServoOverride == -1 && serialVerticalServoOverride == -1) {
         readRSSI();
   
@@ -110,7 +117,7 @@ void process100HzTask() {
 }
 
 void process10HzTask() {
-    readSerialCommand();
+     readSerialCommand();
 }
 
 void process1HzTask() {
@@ -128,6 +135,7 @@ void updateLCD() {
 }
 
 void readRSSI() {
+    rssiTrackOld = rssiTrack;
     // Map values to defined range
     rssiTrack = map(analogRead(rssi1), 0, calibrate1, 0, 100);
     rssiFix = map(analogRead(rssi2), 0, calibrate2, 0, 100);
@@ -142,14 +150,14 @@ void readRSSI() {
 
 void trackHorizontal()
 {    
-    i = horizontalMid;
+    //i = horizontalMid;
     
-    do {
-        readRSSI();
+    //do {
+      //  readRSSI();
             
         rssiDiv = (rssiTrack-rssiTrackOld);
         
-        if (rssiDiv <= 0) {
+        if (rssiDiv < 0) {
           rssiDiv = rssiDiv * -1;
         }
         
@@ -204,8 +212,8 @@ void trackHorizontal()
             VerticalServo.write(verticalMid);
             return;
          }
-    }
-    while (rssiTrack <= 98);
+    //}
+    //while (rssiTrack <= 98);
 }
 
 
@@ -217,7 +225,7 @@ void trackVertikal() {
         
         rssiDiv = (rssiTrack-rssiTrackOld);
         
-        if (rssiDiv <= 0) {
+        if (rssiDiv < 0) {
             rssiDiv = rssiDiv * -1;
         }
         
