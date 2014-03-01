@@ -2,9 +2,9 @@
 #include <Servo.h>
 
 int verticalTolerance = 3;
-int horizontallTolerance = 2;
+int horizontalTolerance = 2;
 int thresholdValue = 85;
-int verticalMid = 75;
+int verticalMid = 70;
 int horizontalMid = 90;
 int calibrate1 = 0;
 int calibrate2 = 0;
@@ -30,13 +30,13 @@ Servo HorizontalServo;
 
 int rssi1 = A0;
 int rssi2 = A1;
-
 int rssiTrack = 0;
 int rssiFix = 0;
 int rssiTrackOld = 0;
 int rssiDiv = 0;
 int i = horizontalMid;
 int y = 0;
+
 char horizontalDirection;
 char verticalDirection;
 
@@ -45,9 +45,9 @@ LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 void setup()
 {
     lcd.begin(16, 2);
-    VerticalServo.attach(10);  // attaches the servo on pin 10 to the servo object
+    VerticalServo.attach(10);
     VerticalServo.write(verticalMid);
-    HorizontalServo.attach(11);  // attaches the servo on pin 11 to the servo object
+    HorizontalServo.attach(11);
     HorizontalServo.write(horizontalMid);
    
     Serial.begin(115200);
@@ -76,30 +76,27 @@ void loop()
     // 100Hz task loop
     // ================================================================
     if (deltaTime >= 10000) {
-      process100HzTask();
-      frameCounter++;
+        frameCounter++;
       
-    if(frameCounter % TASK_50HZ == 0) {
-      process50HzTask();  
-    }
+        if(frameCounter % TASK_50HZ == 0) {
+            process50HzTask();  
+        }
       
-      previousTime = currentTime;
+        previousTime = currentTime;
     }
     
     if(frameCounter % TASK_10HZ == 0) {   //   10 Hz tasks
-      process10HzTask();
+        process10HzTask();
     }
     
     if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
-      process1HzTask();
+        process1HzTask();
     }
   
     if (frameCounter >= 100) {
-      frameCounter = 0;
+        frameCounter = 0;
     }
 }
-
-void process100HzTask(){}
 
 void process50HzTask() {
     if(serialHorizontalServoOverride == -1 && serialVerticalServoOverride == -1) {
@@ -107,7 +104,28 @@ void process50HzTask() {
   
         if(rssiTrack <= thresholdValue)
         {
-            trackHorizontal();
+            calculateRSSIDiff();
+            
+            if(rssiDiv <= horizontalTolerance ) {   
+                if(rssiTrack <= 45) {
+                    VerticalServo.write(verticalMid);
+                    
+                    if(i >= horizontalMid) {
+                        i = i - 30;
+                        horizontalDirection = 'L';
+                    }
+                    else {
+                        i = i + 30;
+                        horizontalDirection = 'R';
+                    }
+                }
+                else {               
+                    trackVertical();
+                }
+            }
+            else {   
+                trackHorizontal();
+            }
         }
     }
     else {
@@ -136,7 +154,7 @@ void updateLCD() {
 
 void readRSSI() {
     rssiTrackOld = rssiTrack;
-    // Map values to defined range
+
     rssiTrack = map(analogRead(rssi1), 0, calibrate1, 0, 100);
     rssiFix = map(analogRead(rssi2), 0, calibrate2, 0, 100);
     
@@ -148,132 +166,95 @@ void readRSSI() {
     }
 }
 
-void trackHorizontal()
-{    
-    //i = horizontalMid;
-    
-    //do {
-      //  readRSSI();
-            
-        rssiDiv = (rssiTrack-rssiTrackOld);
-        
-        if (rssiDiv < 0) {
-          rssiDiv = rssiDiv * -1;
-        }
-        
-        if(rssiDiv <= horizontallTolerance ) {   
-            if(rssiTrack <= 45) {
-                VerticalServo.write(verticalMid);
-                if(i >= horizontalMid) {
-                    i = i - 30;
-                    horizontalDirection = 'L';
-                }
-                else {
-                    i = i + 30;
-                    horizontalDirection = 'R';
-                }
-            }
-            else {               
-                trackVertikal();
-            }
+void calculateRSSIDiff() {
+    rssiDiv = (rssiTrack - rssiTrackOld);
+
+    if (rssiDiv < 0) {
+        rssiDiv = rssiDiv * -1;
+    }
+}
+
+void trackHorizontal() {              
+    if(rssiTrack > rssiTrackOld) {
+        if (horizontalDirection == 'L') {
+            i = i + 10;
+            horizontalDirection = 'L';
         }
         else {
-            if(rssiTrack>rssiTrackOld) {
-                if (horizontalDirection == 'L') {
-                    i = i + 10;
-                    horizontalDirection = 'L';
-                }
-                else {
-                    i = i - 10;
-                    horizontalDirection = 'R';
-                }
-            }
-            else {
-                if (horizontalDirection == 'R') {
-                    i = i + 10;
-                    horizontalDirection = 'L';
-                }
-                else {
-                    i = i - 10;
-                    horizontalDirection = 'R';
-                }
-            }      
+            i = i - 10;
+            horizontalDirection = 'R';
         }
+    }
+    else {
+        if (horizontalDirection == 'R') {
+            i = i + 10;
+            horizontalDirection = 'L';
+        }
+        else {
+            i = i - 10;
+            horizontalDirection = 'R';
+        }
+    }      
+
+    HorizontalServo.write(i);
+
+    if (i <= 0 || i >= 180) {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Reset");
     
-        HorizontalServo.write(i);
-    
-        if (i <= 0 || i >= 180) {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Reset");
-        
-            i = horizontalMid;
-            HorizontalServo.write(horizontalMid);
-            VerticalServo.write(verticalMid);
-            return;
-         }
-    //}
-    //while (rssiTrack <= 98);
+        i = horizontalMid;
+        HorizontalServo.write(horizontalMid);
+        VerticalServo.write(verticalMid);
+        return;
+     }
 }
 
 
-void trackVertikal() {
-    int loopi = 0;
+void trackVertical() {       
+    calculateRSSIDiff();
     
-    do {
-        readRSSI();
-        
-        rssiDiv = (rssiTrack-rssiTrackOld);
-        
-        if (rssiDiv < 0) {
-            rssiDiv = rssiDiv * -1;
+    if(rssiDiv <= horizontalTolerance) {   
+        if(rssiTrack <= 45) {
+            y = verticalMid;
+            VerticalServo.write(y);
+            return;               
         }
-        
-        if( rssiDiv <= horizontallTolerance ) {   
-            if(rssiTrack <= 45) {
-               y = verticalMid;
-               VerticalServo.write(y);
-               return;               
+    }
+    else {
+        if(rssiTrack > rssiTrackOld) {
+            if (verticalDirection == 'O')
+            {
+                y = y - 5;
+                verticalDirection = 'O';
+            }
+            else {
+                y = y + 5;
+                verticalDirection = 'U';
             }
         }
         else {
-            if(rssiTrack > rssiTrackOld) {
-                if (verticalDirection == 'O')
-                {
-                    y = y - 5;
-                    verticalDirection = 'O';
-                }
-                else {
-                    y = y + 5;
-                    verticalDirection = 'U';
-                }
+            if (verticalDirection == 'U') {
+                y = y - 5;
+                verticalDirection = 'O';
             }
             else {
-                if (verticalDirection == 'U') {
-                    y = y - 5;
-                    verticalDirection = 'O';
-                }
-                else {
-                    y = y + 5;
-                    verticalDirection = 'U';
-                }
-            }        
-        }
+                y = y + 5;
+                verticalDirection = 'U';
+            }
+        }        
+    }
  
-        VerticalServo.write(y);
+    VerticalServo.write(y);
+    
+    if (y <= 10 || y >= 100) {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Reset");
         
-        if (y <= 10 || y >= 100) {
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Reset");
-            
-            y=verticalMid;
-            return;
-        }
-        
-        loopi++;
-        }
-    while (loopi <= 4);
+        y = verticalMid;
+        return;
+    }
 }
 
 //***************************************************************************************************
