@@ -1,11 +1,15 @@
 #include <LiquidCrystal.h>
 #include <Servo.h>
 
-int verticalTolerance = 3;
-int horizontalTolerance = 2;
-int thresholdValue = 85;
-int verticalMid = 70;
-int horizontalMid = 90;
+static const int verticalTolerance = 3;
+static const int horizontalTolerance = 2;
+static const int thresholdValue = 85;
+static const int verticalMin = 10;
+static const int verticalMid = 70;
+static const int verticalMax = 100;
+static const int horizontalMin = 0;
+static const int horizontalMid = 90;
+static const int horizontalMax = 180;
 int calibrate1 = 0;
 int calibrate2 = 0;
 int serialHorizontalServoOverride = -1;
@@ -28,14 +32,14 @@ unsigned long deltaTime = 0;
 Servo VerticalServo;
 Servo HorizontalServo;
 
-int rssi1 = A0;
-int rssi2 = A1;
+static const int rssi1 = A0;
+static const int rssi2 = A1;
 int rssiTrack = 0;
 int rssiFix = 0;
 int rssiTrackOld = 0;
 int rssiDiv = 0;
 int i = horizontalMid;
-int y = 0;
+int y = verticalMid;
 
 char horizontalDirection;
 char verticalDirection;
@@ -128,10 +132,6 @@ void process50HzTask() {
             }
         }
     }
-    else {
-        if(serialHorizontalServoOverride != -1) HorizontalServo.write(serialHorizontalServoOverride);
-        if(serialVerticalServoOverride != -1) VerticalServo.write(serialVerticalServoOverride);
-    }
 }
 
 void process10HzTask() {
@@ -158,12 +158,8 @@ void readRSSI() {
     rssiTrack = map(analogRead(rssi1), 0, calibrate1, 0, 100);
     rssiFix = map(analogRead(rssi2), 0, calibrate2, 0, 100);
     
-    if (rssiTrack>100) {
-        rssiTrack = 100;
-    }
-    if (rssiFix>100) {
-        rssiFix = 100;
-    }
+    rssiTrack = constrain(rssiTrack, 0, 100);
+    rssiFix = constrain(rssiFix, 0, 100);
 }
 
 void calculateRSSIDiff() {
@@ -198,7 +194,7 @@ void trackHorizontal() {
 
     HorizontalServo.write(i);
 
-    if (i <= 0 || i >= 180) {
+    if (i <= horizontalMin || i >= horizontalMax) {
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Reset");
@@ -207,7 +203,7 @@ void trackHorizontal() {
         HorizontalServo.write(horizontalMid);
         VerticalServo.write(verticalMid);
         return;
-     }
+    }
 }
 
 
@@ -247,7 +243,7 @@ void trackVertical() {
  
     VerticalServo.write(y);
     
-    if (y <= 10 || y >= 100) {
+    if (y <= verticalMin || y >= verticalMax) {
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Reset");
@@ -268,11 +264,17 @@ void readSerialCommand() {
     switch (queryType) {
     case 'A': 
       serialHorizontalServoOverride = readIntegerSerial();
+      serialHorizontalServoOverride = constrain(serialHorizontalServoOverride, horizontalMin, horizontalMax);        
+      HorizontalServo.write(serialHorizontalServoOverride);
       break;
     case 'B':
       serialVerticalServoOverride = readIntegerSerial();
+      serialVerticalServoOverride = constrain(serialVerticalServoOverride, verticalMin, verticalMax);   
+      VerticalServo.write(serialVerticalServoOverride);
       break;
     case 'X':
+      HorizontalServo.write(horizontalMid);
+      VerticalServo.write(verticalMid);
       serialHorizontalServoOverride = -1;
       serialVerticalServoOverride = -1;
       break;
