@@ -1,15 +1,15 @@
 #include <LiquidCrystal.h>
 #include <Servo.h>
 
-static const int verticalTolerance = 3;
 static const int horizontalTolerance = 2;
-static const int thresholdValue = 85;
-static const int verticalMin = 10;
+static const int thresholdValue = 80;
+static const int verticalMin = 20;
 static const int verticalMid = 70;
-static const int verticalMax = 100;
+static const int verticalMax = 120;
 static const int horizontalMin = 0;
 static const int horizontalMid = 90;
-static const int horizontalMax = 180;
+static const int horizontalMax = 110;
+int trackingCounter = 0;
 int calibrate1 = 0;
 int calibrate2 = 0;
 int serialHorizontalServoOverride = -1;
@@ -25,6 +25,7 @@ unsigned long deltaTime = 0;
 
 #define TASK_50HZ 2
 #define TASK_10HZ 10
+#define TASK_5HZ 20
 #define TASK_1HZ 100
 
 #define NUMBER_OF_SAMPLES 10
@@ -93,6 +94,10 @@ void loop()
         process10HzTask();
     }
     
+    if(frameCounter % TASK_5HZ == 0) {  //  5 Hz tasks
+        process5HzTask();
+    }
+    
     if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
         process1HzTask();
     }
@@ -102,40 +107,55 @@ void loop()
     }
 }
 
-void process50HzTask() {
+void process50HzTask() { }
+
+void processTracking() {
     if(serialHorizontalServoOverride == -1 && serialVerticalServoOverride == -1) {
         readRSSI();
   
-        if(rssiTrack <= thresholdValue)
-        {
-            calculateRSSIDiff();
+        if(rssiTrack <= thresholdValue) {        
+          if(trackingCounter < 15) {
+              trackingCounter++;
+              calculateRSSIDiff();
             
-            if(rssiDiv <= horizontalTolerance ) {   
-                if(rssiTrack <= 45) {
-                    VerticalServo.write(verticalMid);
+              if(rssiDiv <= horizontalTolerance ) {   
+                  if(rssiTrack <= 45) {
+                      VerticalServo.write(verticalMid);
                     
-                    if(i >= horizontalMid) {
-                        i = i - 30;
-                        horizontalDirection = 'L';
-                    }
-                    else {
-                        i = i + 30;
-                        horizontalDirection = 'R';
-                    }
-                }
-                else {               
-                    trackVertical();
-                }
-            }
-            else {   
-                trackHorizontal();
-            }
-        }
-    }
+                      if(i >= horizontalMid) {
+                          i = i - 30;
+                          horizontalDirection = 'L';
+                      }
+                      else {
+                          i = i + 30;
+                          horizontalDirection = 'R';
+                      }
+                  }
+                  else {               
+                      trackVertical();
+                  }
+              }
+              else {   
+                  trackHorizontal();
+              }
+          }
+          else {
+              HorizontalServo.write(horizontalMid);
+              VerticalServo.write(verticalMid);
+          }
+      }
+      else {
+         trackingCounter = 0; 
+      }
+   }
 }
 
 void process10HzTask() {
      readSerialCommand();
+}
+
+void process5HzTask() {
+     processTracking(); 
 }
 
 void process1HzTask() {
@@ -170,7 +190,7 @@ void calculateRSSIDiff() {
     }
 }
 
-void trackHorizontal() {              
+void trackHorizontal() {    
     if(rssiTrack > rssiTrackOld) {
         if (horizontalDirection == 'L') {
             i = i + 10;
@@ -207,39 +227,28 @@ void trackHorizontal() {
 }
 
 
-void trackVertical() {       
-    calculateRSSIDiff();
-    
-    if(rssiDiv <= horizontalTolerance) {   
-        if(rssiTrack <= 45) {
-            y = verticalMid;
-            VerticalServo.write(y);
-            return;               
+void trackVertical() {
+    if(rssiTrack > rssiTrackOld) {
+        if (verticalDirection == 'O')
+        {
+            y = y - 5;
+            verticalDirection = 'O';
+        }
+        else {
+            y = y + 5;
+            verticalDirection = 'U';
         }
     }
     else {
-        if(rssiTrack > rssiTrackOld) {
-            if (verticalDirection == 'O')
-            {
-                y = y - 5;
-                verticalDirection = 'O';
-            }
-            else {
-                y = y + 5;
-                verticalDirection = 'U';
-            }
+        if (verticalDirection == 'U') {
+            y = y - 5;
+            verticalDirection = 'O';
         }
         else {
-            if (verticalDirection == 'U') {
-                y = y - 5;
-                verticalDirection = 'O';
-            }
-            else {
-                y = y + 5;
-                verticalDirection = 'U';
-            }
-        }        
-    }
+            y = y + 5;
+            verticalDirection = 'U';
+        }
+    }        
  
     VerticalServo.write(y);
     
