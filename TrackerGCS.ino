@@ -3,9 +3,11 @@
 #include "TrackerGCS.h"
 #include "uart.h"
 #include "Mikrokopter_Datastructs.h"
+#include "AeroQuad_Datastructs.h"
 #include "GpsAdapter.h"
-#include "Compass.h"
-#include "Magnetometer_HMC5883L.h"
+#include "HMC5883L.h"
+
+HMC5883L compass;
 
 static const int horizontalTolerance = 2;
 static const int thresholdValue = 80;
@@ -51,191 +53,200 @@ Servo HorizontalServo;
 
 void setup()
 {
-  determineTrackingMode();
+	determineTrackingMode();
 
-  lcd.begin(16, 2);
-  VerticalServo.attach(10);
-  VerticalServo.write(verticalMid);
-  HorizontalServo.attach(11);
-  HorizontalServo.write(horizontalMid);
+	lcd.begin(16, 2);
+	VerticalServo.attach(10);
+	VerticalServo.write(verticalMid);
+	HorizontalServo.attach(11);
+	HorizontalServo.write(horizontalMid);
 
-  if(trackingMode == 0) {
-    lcd.setCursor(0, 0);
-    lcd.print("Calibrating...");
+	if (trackingMode == 0) {
+		lcd.setCursor(0, 0);
+		lcd.print("Calibrating...");
 
-    for(i = 0; i < NUMBER_OF_SAMPLES; i++) {
-      calibrate1 = calibrate1 + analogRead(rssi1);
-      delay(25);
-    }
-    calibrate1 = calibrate1 / NUMBER_OF_SAMPLES;
+		for (i = 0; i < NUMBER_OF_SAMPLES; i++) {
+			calibrate1 = calibrate1 + analogRead(rssi1);
+			delay(25);
+		}
+		calibrate1 = calibrate1 / NUMBER_OF_SAMPLES;
 
-    for(i = 0; i < NUMBER_OF_SAMPLES; i++) {
-      calibrate2 = calibrate2 + analogRead(rssi2);
-      delay(25);
-    }
-    calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
-  }
-  else if(trackingMode == 1) {
-    determineProtocolType();
-    usart0_Init();
+		for (i = 0; i < NUMBER_OF_SAMPLES; i++) {
+			calibrate2 = calibrate2 + analogRead(rssi2);
+			delay(25);
+		}
+		calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
+	}
+	else if (trackingMode == 1) {
+		determineProtocolType();
+		usart0_Init();
 
-    //already done by OSD
-    //usart0_request_nc_uart();
+		//already done by OSD
+		//usart0_request_nc_uart();
 
-    initializeGps();
-  }
+		initializeGps();
+		setupHMC5883L();
+	}
+}
+
+void setupHMC5883L(){
+	compass = HMC5883L();
+	compass.SetScale(1.3); //Set the scale of the compass.
+	compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
 }
 
 void determineTrackingMode() {
-  trackingMode = 1; 
+	trackingMode = 1;
 }
 
 void determineProtocolType() {
-  protocolType = 1; 
+	protocolType = 1;
 }
 
 void loop()
 {
-  currentTime = micros();
-  deltaTime = currentTime - previousTime;
+	currentTime = micros();
+	deltaTime = currentTime - previousTime;
 
-  // ================================================================
-  // 100Hz task loop
-  // ================================================================
-  if (deltaTime >= 10000) {
-    frameCounter++;
+	// ================================================================
+	// 100Hz task loop
+	// ================================================================
+	if (deltaTime >= 10000) {
+		frameCounter++;
 
-    process100HzTask();
+		process100HzTask();
 
-    if(frameCounter % TASK_50HZ == 0) {
-      process50HzTask();  
-    }
+		if (frameCounter % TASK_50HZ == 0) {
+			process50HzTask();
+		}
 
-    previousTime = currentTime;
-  }
+		previousTime = currentTime;
+	}
 
-  if(frameCounter % TASK_10HZ == 0) {   //   10 Hz tasks
-    process10HzTask();
-  }
+	if (frameCounter % TASK_10HZ == 0) {   //   10 Hz tasks
+		process10HzTask();
+	}
 
-  if(frameCounter % TASK_5HZ == 0) {  //  5 Hz tasks
-    process5HzTask();
-  }
+	if (frameCounter % TASK_5HZ == 0) {  //  5 Hz tasks
+		process5HzTask();
+	}
 
-  if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
-    process1HzTask();
-  }
+	if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
+		process1HzTask();
+	}
 
-  if (frameCounter >= 100) {
-    frameCounter = 0;
-  }
+	if (frameCounter >= 100) {
+		frameCounter = 0;
+	}
 }
 
 void process100HzTask() {
-  updateGps();
-  updateGCSPosition();
+
 }
 
-void process50HzTask() { 
+void process50HzTask() {
 }
 
 void process10HzTask() {
-  if(trackingMode == 1) {
-    // request OSD Data from NC every 100ms, already requested by OSD
-    //usart0_puts_pgm(PSTR(REQUEST_OSD_DATA));
+	if (trackingMode == 1) {
+		// request OSD Data from NC every 100ms, already requested by OSD
+		//usart0_puts_pgm(PSTR(REQUEST_OSD_DATA));
 
-    processUsartData();
-  }
+		processUsartData();
+	}
 }
 
 void process5HzTask() {
-  processTracking(); 
+	updateGps();
+	updateGCSPosition();
+	updateGCSHeading();
+	processTracking();
 }
 
 void process1HzTask() {
-  updateLCD();
+	updateLCD();
 }
 
 void processTracking() {
-  readRSSI();
+	readRSSI();
 
-  if(trackingMode == 0) {
-    if(rssiTrack <= thresholdValue) {        
-      if(trackingCounter < 15) {
-        trackingCounter++;
-        calculateRSSIDiff();
+	if (trackingMode == 0) {
+		if (rssiTrack <= thresholdValue) {
+			if (trackingCounter < 15) {
+				trackingCounter++;
+				calculateRSSIDiff();
 
-        if(rssiDiv <= horizontalTolerance ) {   
-          if(rssiTrack <= 45) {
-            VerticalServo.write(verticalMid);
+				if (rssiDiv <= horizontalTolerance) {
+					if (rssiTrack <= 45) {
+						VerticalServo.write(verticalMid);
 
-            if(i >= horizontalMid) {
-              i = i - 30;
-              horizontalDirection = 'L';
-            }
-            else {
-              i = i + 30;
-              horizontalDirection = 'R';
-            }
-          }
-          else {               
-            trackVertical();
-          }
-        }
-        else {   
-          trackHorizontal();
-        }
-      }
-      else {
-        HorizontalServo.write(horizontalMid);
-        VerticalServo.write(verticalMid);
-      }
-    }
-    else {
-      trackingCounter = 0; 
-    }
-  }
-  else if(trackingMode == 1) {
-    //only move servo if gps has a 3D fix, or standby to last known position.
-    if (gps_fix && telemetry_ok) {
+						if (i >= horizontalMid) {
+							i = i - 30;
+							horizontalDirection = 'L';
+						}
+						else {
+							i = i + 30;
+							horizontalDirection = 'R';
+						}
+					}
+					else {
+						trackVertical();
+					}
+				}
+				else {
+					trackHorizontal();
+				}
+			}
+			else {
+				//Temporarilly stop tracking if threshold can't be exceeded for more than 3 seconds
+				HorizontalServo.write(horizontalMid);
+				VerticalServo.write(verticalMid);
+			}
+		}
+		else {
+			trackingCounter = 0;
+		}
+	}
+	else if (trackingMode == 1) {
+		// Only move servo if GPS has a fix, otherwise standby to last known position
+		if (hasGPSFix && isTelemetryOk) {
 
-      int rel_alt = uav_alt - home_alt; // relative altitude to ground in decimeters
-      calc_tracking( home_lon, home_lat, uav_lon, uav_lat, rel_alt); //calculate tracking bearing/azimuth
-      //set current GPS bearing relative to home_bearing
+			int rel_alt = uav_alt - home_alt;
+			calculateTrackingVariables(home_lon, home_lat, uav_lon, uav_lat, rel_alt); //calculate tracking bearing/azimuth
 
-      if(Bearing >= home_bearing){
-        Bearing-=home_bearing;
-      }
-      else
-      {
-        Bearing+=360-home_bearing;
-      }
+			//set current GPS bearing relative to home_bearing
+			if (Bearing >= home_bearing) {
+				Bearing -= home_bearing;
+			}
+			else {
+				Bearing += 360 - home_bearing;
+			}
 
-      if(home_dist > minTrackingDistance) { //don't track when <10m 
-
-      }
-    }  
-  }
+			if (home_dist > minTrackingDistance) {
+				servoPathfinder(Bearing, Elevation);
+			}
+		}
+	}
 }
 
 void updateLCD() {
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("RSSI Track ");
-  lcd.print(rssiTrack);
-  lcd.setCursor(0, 1);
-  lcd.print("RSSI Fix ");
-  lcd.print(rssiFix);
+	lcd.clear();
+	lcd.setCursor(0, 0);
+	lcd.print("RSSI Track ");
+	lcd.print(rssiTrack);
+	lcd.setCursor(0, 1);
+	lcd.print("RSSI Fix ");
+	lcd.print(rssiFix);
 }
 
 void readRSSI() {
-  rssiTrackOld = rssiTrack;
+	rssiTrackOld = rssiTrack;
 
-  rssiTrack = map(analogRead(rssi1), 0, calibrate1, 0, 100);
-  rssiFix = map(analogRead(rssi2), 0, calibrate2, 0, 100);
+	rssiTrack = map(analogRead(rssi1), 0, calibrate1, 0, 100);
+	rssiFix = map(analogRead(rssi2), 0, calibrate2, 0, 100);
 
-  rssiTrack = constrain(rssiTrack, 0, 100);
-  rssiFix = constrain(rssiFix, 0, 100);
+	rssiTrack = constrain(rssiTrack, 0, 100);
+	rssiFix = constrain(rssiFix, 0, 100);
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -243,223 +254,214 @@ void readRSSI() {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void calculateRSSIDiff() {
-  rssiDiv = (rssiTrack - rssiTrackOld);
+	rssiDiv = (rssiTrack - rssiTrackOld);
 
-  if (rssiDiv < 0) {
-    rssiDiv = rssiDiv * -1;
-  }
+	if (rssiDiv < 0) {
+		rssiDiv = rssiDiv * -1;
+	}
 }
 
-void trackHorizontal() {    
-  if(rssiTrack > rssiTrackOld) {
-    if (horizontalDirection == 'L') {
-      i = i + 10;
-      horizontalDirection = 'L';
-    }
-    else {
-      i = i - 10;
-      horizontalDirection = 'R';
-    }
-  }
-  else {
-    if (horizontalDirection == 'R') {
-      i = i + 10;
-      horizontalDirection = 'L';
-    }
-    else {
-      i = i - 10;
-      horizontalDirection = 'R';
-    }
-  }      
+void trackHorizontal() {
+	if (rssiTrack > rssiTrackOld) {
+		if (horizontalDirection == 'L') {
+			i = i + 10;
+			horizontalDirection = 'L';
+		}
+		else {
+			i = i - 10;
+			horizontalDirection = 'R';
+		}
+	}
+	else {
+		if (horizontalDirection == 'R') {
+			i = i + 10;
+			horizontalDirection = 'L';
+		}
+		else {
+			i = i - 10;
+			horizontalDirection = 'R';
+		}
+	}
 
-  HorizontalServo.write(i);
+	HorizontalServo.write(i);
 
-  if (i <= horizontalMin || i >= horizontalMax) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Reset");
+	if (i <= horizontalMin || i >= horizontalMax) {
+		lcd.clear();
+		lcd.setCursor(0, 0);
+		lcd.print("Reset");
 
-    i = horizontalMid;
-    HorizontalServo.write(horizontalMid);
-    VerticalServo.write(verticalMid);
-    return;
-  }
+		i = horizontalMid;
+		HorizontalServo.write(horizontalMid);
+		VerticalServo.write(verticalMid);
+		return;
+	}
 }
 
 
 void trackVertical() {
-  if(rssiTrack > rssiTrackOld) {
-    if (verticalDirection == 'O')
-    {
-      y = y - 5;
-      verticalDirection = 'O';
-    }
-    else {
-      y = y + 5;
-      verticalDirection = 'U';
-    }
-  }
-  else {
-    if (verticalDirection == 'U') {
-      y = y - 5;
-      verticalDirection = 'O';
-    }
-    else {
-      y = y + 5;
-      verticalDirection = 'U';
-    }
-  }        
+	if (rssiTrack > rssiTrackOld) {
+		if (verticalDirection == 'O')
+		{
+			y = y - 5;
+			verticalDirection = 'O';
+		}
+		else {
+			y = y + 5;
+			verticalDirection = 'U';
+		}
+	}
+	else {
+		if (verticalDirection == 'U') {
+			y = y - 5;
+			verticalDirection = 'O';
+		}
+		else {
+			y = y + 5;
+			verticalDirection = 'U';
+		}
+	}
 
-  VerticalServo.write(y);
+	VerticalServo.write(y);
 
-  if (y <= verticalMin || y >= verticalMax) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Reset");
+	if (y <= verticalMin || y >= verticalMax) {
+		lcd.clear();
+		lcd.setCursor(0, 0);
+		lcd.print("Reset");
 
-    y = verticalMid;
-    return;
-  }
+		y = verticalMid;
+		return;
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 //                                               GPS Tracker                                           //
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 void updateGCSPosition() {
-
+	if (hasGPSFix) {
+		home_lat = gpsData.lat / 1.0e7f;
+		home_lon = gpsData.lon / 1.0e7f;
+		home_alt = gpsData.height / 10;
+	}
 }
 
+void updateGCSHeading() {
+	//Get the reading from the HMC5883L and calculate the heading
+	MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
+	float heading = atan2(scaled.YAxis, scaled.XAxis);
+
+	// Correct for when signs are reversed.
+	if (heading < 0) heading += 2 * PI;
+	if (heading > 2 * PI) heading -= 2 * PI;
+
+	home_bearing = (int)heading * RAD_TO_DEG; //radians to degrees
+}
 
 void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
-  //find the best way to move pan servo considering 0° reference face toward
-  if (angle_b<=180) {
-    if (horizontalMax >= angle_b ) {
-      //works for all config
-      //define limits
-      if (angle_a <= verticalMin) {
-        // checking if we reach the min tilt limit
-        angle_a = verticalMin;
-      }
-      else if (angle_a > verticalMax) {
-        //shouldn't happend but just in case
-        angle_a = verticalMax; 
-      }
+	//find the best way to move pan servo considering 0° reference face toward
+	if (angle_b <= 180) {
+		if (horizontalMax >= angle_b) {
+			if (angle_a <= verticalMin) {
+				// checking if we reach the min tilt limit
+				angle_a = verticalMin;
+			}
+			else if (angle_a > verticalMax) {
+				//shouldn't happend but just in case
+				angle_a = verticalMax;
+			}
+		}
+		else if (horizontalMax < angle_b) {
+			//relevant for 180° tilt config only, in case bearing is superior to pan_maxangle
+			angle_b = 360 - (180 - angle_b);
+			if (angle_b >= 360) {
+				angle_b = angle_b - 360;
+			}
+			// invert pan axis 
+			if (verticalMax >= (180 - angle_a)) {
+				// invert pan & tilt for 180° Pan 180° Tilt config
+				angle_a = 180 - angle_a;
+			}
+			else if (verticalMax < (180 - angle_a)) {
+				// staying at nearest max pos
+				angle_a = verticalMax;
+			}
+		}
+	}
+	else {
+		if (horizontalMin > 360 - angle_b) {
+			//works for all config
+			if (angle_a < verticalMin) {
+				// checking if we reach the min tilt limit
+				angle_a = verticalMin;
+			}
+		}
+		else if (horizontalMin <= 360 - angle_b) {
+			angle_b = angle_b - 180;
+			if (verticalMax >= (180 - angle_a)) {
+				// invert pan & tilt for 180/180 conf
+				angle_a = 180 - angle_a;
+			}
+			else if (verticalMax < (180 - angle_a)) {
+				// staying at nearest max pos
+				angle_a = verticalMax;
+			}
+		}
+	}
 
-    }
-    else if (horizontalMax < angle_b ) {
-      //relevant for 180° tilt config only, in case bearing is superior to pan_maxangle
+	angle_a = constrain(angle_a, verticalMin, verticalMax);
+	angle_b = constrain(angle_b, horizontalMin, horizontalMax);
 
-      angle_b = 360-(180-angle_b);
-      if (angle_b >= 360) {
-        angle_b = angle_b - 360;
-      }
-
-      // invert pan axis 
-      if (verticalMax >= ( 180-angle_a )) {
-        // invert pan & tilt for 180° Pan 180° Tilt config
-
-        angle_a = 180-angle_a;
-
-      }
-      else if (verticalMax < ( 180-angle_a )) {
-        // staying at nearest max pos
-        angle_a = verticalMax;
-      }
-    }
-  }
-
-  else if ( angle_b > 180 )
-    if(horizontalMin > 360-angle_b ) {
-      //works for all config
-      if (angle_a < verticalMin) {
-        // checking if we reach the min tilt limit
-        angle_a = verticalMin;
-      }
-    }
-    else if (horizontalMin <= 360-angle_b ) {
-      angle_b = angle_b - 180;
-      if (verticalMax >= ( 180-angle_a )) {
-        // invert pan & tilt for 180/180 conf
-        angle_a = 180-angle_a;
-      }
-      else if (verticalMax < ( 180-angle_a)) {
-        // staying at nearest max pos
-        angle_a = verticalMax;
-      }
-    }
-
-  HorizontalServo.write(angle_b);
-  VerticalServo.write(angle_a);
+	HorizontalServo.write(angle_b);
+	VerticalServo.write(angle_a);
 }
 
-void calc_tracking(float lon1, float lat1, float lon2, float lat2, int alt) {
-  //// (homelon, homelat, uavlon, uavlat, uavalt ) 
-  //// Return Bearing & Elevation angles in degree
-  //  float a, tc1, R, c, d, dLat, dLon;
-  // 
-  // // converting to radian
-  lon1=toRad(lon1);
-  lat1=toRad(lat1);
-  lon2=toRad(lon2);
-  lat2=toRad(lat2);
-  // 
-  // 
-  // //calculating bearing in degree decimal
-  Bearing = calc_bearing(lon1,lat1,lon2,lat2);
-  //
-  //
-  ////calculating distance between uav & home
-  Elevation = calc_elevation(lon1,lat1,lon2,lat2,alt);
+void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, int alt) {
+	// (homelon, homelat, uavlon, uavlat, uavalt ) 
+	// Return Bearing & Elevation angles in degree
+	// converting to radian
+	lon1 = toRad(lon1);
+	lat1 = toRad(lat1);
+	lon2 = toRad(lon2);
+	lat2 = toRad(lat2);
+
+	//calculating bearing in degree decimal
+	Bearing = calculateBearing(lon1, lat1, lon2, lat2);
+
+	//calculating distance between uav & home
+	Elevation = calculateElevation(lon1, lat1, lon2, lat2, alt);
 }
 
+int calculateBearing(float lon1, float lat1, float lon2, float lat2) {
+	// bearing calc, feeded in radian, output degrees
+	float a;
+	a = atan2(sin(lon2 - lon1)*cos(lat2), cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(lon2 - lon1));
+	a = toDeg(a);
 
-int calc_bearing(float lon1, float lat1, float lon2, float lat2) {
-  // bearing calc, feeded in radian, output degrees
-  float a;
-  //calculating bearing 
-  a=atan2(sin(lon2-lon1)*cos(lat2), cos(lat1)*sin(lat2)-sin(lat1)*cos(lat2)*cos(lon2-lon1));
-  a=toDeg(a);
-  if (a<0) a=360+a;
-  int b = (int)round(a);
-  return b;
+	if (a < 0) a = 360 + a;
+	return (int)round(a);
 }
 
-int calc_elevation(float lon1, float lat1, float lon2, float lat2, int alt) {
-  // feeded in radian, output in degrees
-  float a, el, c, d, R, dLat, dLon;
-  //calculating distance between uav & home
-  R=6371000.0;    //in meters. Earth radius 6371km
-  dLat = (lat2-lat1);
-  dLon = (lon2-lon1);
-  a = sin(dLat/2) * sin(dLat/2) + sin(dLon/2) * sin(dLon/2) * cos(lat1) * cos(lat2);
-  c = 2* asin(sqrt(a));  
-  d =(R * c);
-  home_dist = d/10;
-  el=atan((float)alt/(10*d));// in radian
-  el=toDeg(el); // in degree
-  int b = (int)round(el);
-  return b;
+int calculateElevation(float lon1, float lat1, float lon2, float lat2, int alt) {
+	// feeded in radian, output in degrees
+	float a, el, c, d, R, dLat, dLon;
+	//calculating distance between uav & home
+	R = 6371000.0;    //in meters. Earth radius 6371km
+	dLat = (lat2 - lat1);
+	dLon = (lon2 - lon1);
+	a = sin(dLat / 2) * sin(dLat / 2) + sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2);
+	c = 2 * asin(sqrt(a));
+	d = (R * c);
+	home_dist = d / 10;
+	el = atan((float)alt / (10 * d));// in radian
+	el = toDeg(el); // in degree
+	return (int)round(el);
 }
 
 float toRad(float angle) {
-  // convert degrees to radians
-  angle = angle*0.01745329; // (angle/180)*pi
-  return angle;
+	// convert degrees to radians
+	return angle*0.01745329; // (angle/180)*pi
 }
 
 float toDeg(float angle) {
-  // convert radians to degrees.
-  angle = angle*57.29577951;   // (angle*180)/pi
-  return angle;
+	// convert radians to degrees.
+	return angle*57.29577951;   // (angle*180)/pi
 }
-
-
-
-
-
-
-
-
-
-
-
