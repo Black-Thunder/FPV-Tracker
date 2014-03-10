@@ -26,7 +26,8 @@ char verticalDirection = 0;
 
 // GPS tracking
 char trackingMode = 0; // 0=RSSI-Tracking, 1=GPS-Tracking
-char protocolType = 0; 
+char protocolType = 0;
+const int protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
 
 float uav_lat = 0;
 float uav_lon = 0;
@@ -47,6 +48,8 @@ bool isTelemetryOk = false;
 long lastPacketReceived = 0;
 
 // General
+const int trackingModeSwitchPin = 9; // Switch to determine tracking mode on start-up; LOW=RSSI, HIGH=GPS
+
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
 int rssiTrack = 0;
@@ -112,13 +115,21 @@ void setupHMC5883L(){
 }
 
 void determineTrackingMode() {
-	//TODO
-	trackingMode = 1;
+        if (digitalRead(trackingModeSwitchPin)  == HIGH) {
+                trackingMode = 1;
+        }
+        else {
+                trackingMode = 0;
+        }
 }
 
 void determineProtocolType() {
-	//TODO
-	protocolType = 1;
+        if (digitalRead(protocolTypeSwitchPin)  == HIGH) {
+                protocolType = 1;
+        }
+        else {
+                protocolType = 0;
+        }
 }
 
 void loop()
