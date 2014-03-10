@@ -1,26 +1,3 @@
-/*
-  HardwareSerial.cpp - Hardware serial library for Wiring
-  Copyright (c) 2006 Nicholas Zambetti.  All right reserved.
-
-  This library is free software; you can redistribute it and/or
-  modify it under the terms of the GNU Lesser General Public
-  License as published by the Free Software Foundation; either
-  version 2.1 of the License, or (at your option) any later version.
-
-  This library is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public
-  License along with this library; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-  
-  Modified 23 November 2006 by David A. Mellis
-  Modified 28 September 2010 by Mark Sproul
-  Modified 14 August 2012 by Alarus
-*/
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -89,7 +66,7 @@ struct ring_buffer
 
 inline void store_char(unsigned char c, ring_buffer *buffer)
 {
-  int i = (unsigned int)(buffer->head + 1) % SERIAL_BUFFER_SIZE;
+  unsigned int i = (unsigned int)(buffer->head + 1) % SERIAL_BUFFER_SIZE;
 
   // if we should be storing the received character into the location
   // just before the tail (meaning that the head would advance to the
@@ -123,8 +100,6 @@ inline void store_char(unsigned char c, ring_buffer *buffer)
     if (bit_is_clear(UCSR1A, UPE1)) {
       unsigned char c = UDR1;
       store_char(c, &rx_buffer1);
-    } else {
-      unsigned char c = UDR1;
     };
   }
 #endif
@@ -138,8 +113,6 @@ inline void store_char(unsigned char c, ring_buffer *buffer)
     if (bit_is_clear(UCSR2A, UPE2)) {
       unsigned char c = UDR2;
       store_char(c, &rx_buffer2);
-    } else {
-      unsigned char c = UDR2;
     };
   }
 #endif
@@ -153,8 +126,6 @@ inline void store_char(unsigned char c, ring_buffer *buffer)
     if (bit_is_clear(UCSR3A, UPE3)) {
       unsigned char c = UDR3;
       store_char(c, &rx_buffer3);
-    } else {
-      unsigned char c = UDR3;
     };
   }
 #endif
@@ -339,7 +310,6 @@ try_again:
 void HardwareSerial::begin(unsigned long baud, byte config)
 {
   uint16_t baud_setting;
-  uint8_t current_config;
   bool use_u2x = true;
 
 #if F_CPU == 16000000UL
@@ -433,7 +403,7 @@ void HardwareSerial::flush()
 
 size_t HardwareSerial::write(uint8_t c)
 {
-  int i = (_tx_buffer->head + 1) % SERIAL_BUFFER_SIZE;
+  unsigned int i = (unsigned int)(_tx_buffer->head + 1) % SERIAL_BUFFER_SIZE;
 	
   // If the output buffer is full, there's nothing for it other than to 
   // wait for the interrupt handler to empty it a bit

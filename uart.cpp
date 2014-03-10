@@ -2,8 +2,7 @@
 #include <string.h>
 #include <avr/pgmspace.h>
 #include <avr/interrupt.h>
-
-
+#include <wiring.c>
 #include "uart.h"
 #include "Mikrokopter_Datastructs.h"
 #include "AeroQuad_Datastructs.h"
@@ -38,7 +37,7 @@ unsigned int AboTimeOut = 0;
 volatile unsigned int CountMilliseconds = 0;
 
 volatile TelemetryPacket_t telemetryPacketAeroQuad;
-volatile NaviData_t naviData;
+volatile NaviData_t telemetryPacketMikrokopter;
 
 ISR(USART0_TX_vect)
 {
@@ -190,22 +189,21 @@ void processUsartData(void)
 		uav_lat = telemetryPacketAeroQuad.latitude / 1.0e7f;
 		uav_lon = telemetryPacketAeroQuad.longitude / 1.0e7f;
 		uav_alt = telemetryPacketAeroQuad.altitude / 10;
-		uav_heading = telemetryPacketAeroQuad.heading;
-		uav_gpsheading = telemetryPacketAeroQuad.course;
 	}
 	else if (protocolType == 1) {
 		if (RxdBuffer[2] == 'O') { // NC OSD Data
 			Decode64();
-			memcpy((char*)(&naviData), (char*)pRxData, sizeof(NaviData_t));
+			memcpy((char*)(&telemetryPacketMikrokopter), (char*)pRxData, sizeof(NaviData_t));
 
-			uav_satellites_visible = naviData.SatsInUse;
-			uav_lat = naviData.CurrentPosition.Latitude / 1.0e7f;
-			uav_lon = naviData.CurrentPosition.Longitude / 1.0e7f;
-			uav_alt = naviData.CurrentPosition.Altitude / 10;
-			uav_heading = naviData.Heading;
+			uav_satellites_visible = telemetryPacketMikrokopter.SatsInUse;
+			uav_lat = telemetryPacketMikrokopter.CurrentPosition.Latitude / 1.0e7f;
+			uav_lon = telemetryPacketMikrokopter.CurrentPosition.Longitude / 1.0e7f;
+			uav_alt = telemetryPacketMikrokopter.CurrentPosition.Altitude / 10;
 		}
 	}
 
+	lastPacketReceived = millis();
+	isTelemetryOk = true;
 	NeuerDatensatzEmpfangen = 0;
 	pRxData = 0;
 	RxDataLen = 0;

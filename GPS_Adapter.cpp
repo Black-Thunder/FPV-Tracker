@@ -1,79 +1,19 @@
-/*
-  AeroQuad v3.0 - May 2011
- www.AeroQuad.com
- Copyright (c) 2011 Ted Carancho.  All rights reserved.
- An Open Source Arduino based multicopter.
- 
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- (at your option) any later version.
- 
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU General Public License for more details.
- 
- You should have received a copy of the GNU General Public License
- along with this program. If not, see <http://www.gnu.org/licenses/>.
- */
-
-#ifndef _AQ_GPS_ADAPTER_H_
-#define _AQ_GPS_ADAPTER_H_
-
-#include "GpsDataType.h"
+#include "GPS_Adapter.h"
 #include "HWSerial.h"
 #include <math.h>
 
-struct gpsData gpsData; // This is accessed by the parser functions directly !
+struct gpsConfigEntry gpsConfigEntries[] = {
+	UBLOX_CONFIGS, { NULL, 0 }
+};
 
-// default port
-#ifndef GPS_SERIAL
-#define GPS_SERIAL Serial2
-#endif
-
-#if !defined(UseGPSUBLOX)
-#define UseGPSUBLOX
-#endif
-
-#ifdef UseGPSUBLOX
-#include "GpsUblox.h"
-#endif
-
-#define MIN_NB_SATS_IN_USE 6
-
-#define GPS2RAD (1.0/572957795.0)
-#define RAD2DEG 57.2957795
+uint8_t gpsConfigsSent;  // number of cfg msgs sent
+uint8_t gpsConfigTimer;  // 0 = no more work, 1 = send now, >1 wait
 
 GeodeticPosition currentPosition;
 
+struct gpsData gpsData;
+
 float cosLatitude = 0.7; // @ ~ 45 N/S, this will be adjusted to home loc
-
-struct gpsType {
-  const char *name;
-  void (*init)();
-  int  (*processData)(unsigned char);
-};
-
-uint8_t  gpsConfigsSent;  // number of cfg msgs sent
-uint8_t  gpsConfigTimer;  // 0 = no more work, 1 = send now, >1 wait
-
-const unsigned long gpsBaudRates[] = { 
-  9600L, 19200L, 38400L, 57600L, 115200L};
-const struct gpsType gpsTypes[] = {
-#ifdef UseGPSUBLOX
-  { 
-    "UBlox", ubloxInit, ubloxProcessData   }
-  ,
-#endif
-};
-
-#define GPS_NUMBAUDRATES (sizeof(gpsBaudRates)/sizeof(gpsBaudRates[0]))
-#define GPS_NUMTYPES     (sizeof(gpsTypes)/sizeof(gpsTypes[0]))
-
-// Timeout for GPS
-#define GPS_MAXIDLE_DETECTING 200 // 2 seconds at 100Hz
-#define GPS_MAXIDLE 500           // 5 seconds at 100Hz
 
 void initializeGpsData() {
 
@@ -89,14 +29,6 @@ void initializeGpsData() {
   gpsData.sats = 0;
   gpsData.fixtime = 0xFFFFFFFF;
 }
-
-struct gpsConfigEntry gpsConfigEntries[] = {
-#ifdef UseGPSUBLOX
-  UBLOX_CONFIGS,
-#endif
-  { 
-    NULL, 0   }
-};
 
 // Send initialization strings to GPS one by one,
 // it supports both string and binary packets
@@ -246,6 +178,4 @@ float getDistanceFoot() {
 
   return (gpsRawDistance * 20903280);
 }
-
-#endif
 

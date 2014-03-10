@@ -1,5 +1,5 @@
-#ifndef _AEROQUAD_DATASTRUCTS_H
-#define _AEROQUAD_DATASTRUCTS_H
+#ifndef AEROQUAD_DATASTRUCTS_H
+#define AEROQUAD_DATASTRUCTS_H
 
 typedef struct {
   unsigned short  id;

@@ -1,25 +1,3 @@
-/*
-HMC5883L.cpp - Class file for the HMC5883L Triple Axis Magnetometer Arduino Library.
-Copyright (C) 2011 Love Electronics (loveelectronics.co.uk)/ 2012 bildr.org (Arduino 1.0 compatible)
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the version 3 GNU General Public License as
-published by the Free Software Foundation.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-WARNING: THE HMC5883L IS NOT IDENTICAL TO THE HMC5883!
-Datasheet for HMC5883L:
-http://www51.honeywell.com/aero/common/documents/myaerospacecatalog-documents/Defense_Brochures-documents/HMC5883L_3-Axis_Digital_Compass_IC.pdf
-
-*/
-
 #include "Wire.h"
 #include "HMC5883L.h"
 
@@ -31,6 +9,7 @@ HMC5883L::HMC5883L()
 MagnetometerRaw HMC5883L::ReadRawAxis()
 {
 	uint8_t* buffer = Read(DataRegisterBegin, 6);
+	free(buffer);
 	MagnetometerRaw raw = MagnetometerRaw();
 	raw.XAxis = (buffer[0] << 8) | buffer[1];
 	raw.ZAxis = (buffer[2] << 8) | buffer[3];
@@ -119,7 +98,7 @@ uint8_t* HMC5883L::Read(int address, int length)
 	Wire.beginTransmission(HMC5883L_Address);
 	Wire.requestFrom(HMC5883L_Address, length);
 
-	uint8_t buffer[length];
+	uint8_t* buffer = static_cast<uint8_t *>(malloc(length));
 	if (Wire.available() == length)
 	{
 		for (uint8_t i = 0; i < length; i++)
