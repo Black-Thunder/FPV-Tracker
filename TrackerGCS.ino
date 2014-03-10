@@ -16,8 +16,8 @@ const int thresholdValue = 80;
 int trackingCounter = 0;
 int calibrate1 = 0;
 int calibrate2 = 0;
-int i = 0;
-int y = 0;
+int i = horizontalMid;
+int y = verticalMid;
 
 char horizontalDirection = 0;
 char verticalDirection = 0;
@@ -81,23 +81,19 @@ void setup()
 		lcd.setCursor(0, 0);
 		lcd.print("Calibrating...");
 
-		for (i = 0; i < NUMBER_OF_SAMPLES; i++) {
+		for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
 			calibrate1 = calibrate1 + analogRead(rssi1);
 			delay(25);
 		}
 		calibrate1 = calibrate1 / NUMBER_OF_SAMPLES;
 
-		for (i = 0; i < NUMBER_OF_SAMPLES; i++) {
+		for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
 			calibrate2 = calibrate2 + analogRead(rssi2);
 			delay(25);
 		}
 		calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
-
-		i = horizontalMid;
-		y = verticalMid;
 	}
 	else if (trackingMode == 1) {
-		lastPacketReceived = 0;
 		determineProtocolType();
 		usart0_Init();
 
@@ -116,10 +112,12 @@ void setupHMC5883L(){
 }
 
 void determineTrackingMode() {
+	//TODO
 	trackingMode = 1;
 }
 
 void determineProtocolType() {
+	//TODO
 	protocolType = 1;
 }
 
