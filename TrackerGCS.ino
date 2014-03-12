@@ -29,21 +29,21 @@ char trackingMode = 0; // 0=RSSI-Tracking, 1=GPS-Tracking
 char protocolType = 0;
 const int protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
 
-float uav_lat = 0;
-float uav_lon = 0;
-uint8_t uav_satellites_visible = 0;
-int16_t uav_alt = 0;
+float uavLatitude = invalidPositionCoordinate;
+float uavLongitude = invalidPositionCoordinate;
+uint8_t uavSatellitesVisible = 0;
+int16_t uavAltitude = invalidAltitude;
 
-float home_lon = 0;
-float home_lat = 0;
-float home_dist = 0;
-int home_alt = 0;
-int home_bearing = 0;
+float homeLongitude = invalidPositionCoordinate;
+float homeLatitude = invalidPositionCoordinate;
+float uavDistanceToHome = 0;
+int homeAltitude = invalidAltitude;
+int homeBearing = 0;
 
-int Bearing = 0;
-int Elevation = 0;
+int trackingBearing = 0;
+int trackingElevation = 0;
 
-bool hasGPSFix = false;
+bool uavHasGPSFix = false;
 bool isTelemetryOk = false;
 long lastPacketReceived = 0;
 
@@ -82,6 +82,9 @@ void setup()
 
 	if (trackingMode == 0) {
 		lcd.setCursor(0, 0);
+		lcd.print("Mode: RSSI");
+
+		lcd.setCursor(0, 1);
 		lcd.print("Calibrating...");
 
 		for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
@@ -97,7 +100,12 @@ void setup()
 		calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
 	}
 	else if (trackingMode == 1) {
+		lcd.setCursor(0, 0);
+		lcd.print("Mode: GPS");
+
 		determineProtocolType();
+		delay(1000); // Keep LCD message visible
+
 		usart0_Init();
 
 		//already done by OSD
@@ -115,21 +123,27 @@ void setupHMC5883L(){
 }
 
 void determineTrackingMode() {
-        if (digitalRead(trackingModeSwitchPin)  == HIGH) {
-                trackingMode = 1;
-        }
-        else {
-                trackingMode = 0;
-        }
+	if (digitalRead(trackingModeSwitchPin) == HIGH) {
+		trackingMode = 1;
+	}
+	else {
+		trackingMode = 0;
+	}
 }
 
 void determineProtocolType() {
-        if (digitalRead(protocolTypeSwitchPin)  == HIGH) {
-                protocolType = 1;
-        }
-        else {
-                protocolType = 0;
-        }
+	if (digitalRead(protocolTypeSwitchPin) == HIGH) {
+		protocolType = 1;
+
+		lcd.setCursor(0, 1);
+		lcd.print("Protocol: MK");
+	}
+	else {
+		protocolType = 0;
+
+		lcd.setCursor(0, 1);
+		lcd.print("Protocol: AQ");
+	}
 }
 
 void loop()
@@ -227,22 +241,22 @@ void processTracking() {
 		}
 	}
 	else if (trackingMode == 1) {
-		// Only move servo if GPS has a fix, otherwise standby to last known position
-		if (hasGPSFix && isTelemetryOk) {
+		// Only move servo if home position is set, otherwise standby to last known position
+		if (isHomePositionSet && isTelemetryOk) {
 
-			int rel_alt = uav_alt - home_alt;
-			calculateTrackingVariables(home_lon, home_lat, uav_lon, uav_lat, rel_alt); //calculate tracking bearing/azimuth
+			int relativeAltitude = uavAltitude - homeAltitude;
+			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, relativeAltitude); //calculate tracking bearing/azimuth
 
-			//set current GPS bearing relative to home_bearing
-			if (Bearing >= home_bearing) {
-				Bearing -= home_bearing;
+			//set current GPS bearing relative to homeBearing
+			if (trackingBearing >= homeBearing) {
+				trackingBearing -= homeBearing;
 			}
 			else {
-				Bearing += 360 - home_bearing;
+				trackingBearing += 360 - homeBearing;
 			}
 
-			if (home_dist > minTrackingDistance) {
-				servoPathfinder(Bearing, Elevation);
+			if (uavDistanceToHome > minTrackingDistance) {
+				servoPathfinder(trackingBearing, trackingElevation);
 			}
 		}
 	}

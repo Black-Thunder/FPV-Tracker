@@ -4,12 +4,15 @@
 #include <math.h>
 
 HMC5883L compass;
+bool isHomePositionSet = false;
 
 void updateGCSPosition() {
-	if (hasGPSFix) {
-		home_lat = gpsData.lat / 1.0e7f;
-		home_lon = gpsData.lon / 1.0e7f;
-		home_alt = gpsData.height / 10;
+	if (haveAGpsLock()) {
+		homeLatitude = gpsData.lat / 1.0e7f;
+		homeLongitude = gpsData.lon / 1.0e7f;
+		homeAltitude = gpsData.height / 10;
+
+		isHomePositionSet = true;
 	}
 }
 
@@ -22,7 +25,13 @@ void updateGCSHeading() {
 	if (heading < 0) heading += 2 * PI;
 	if (heading > 2 * PI) heading -= 2 * PI;
 
-	home_bearing = (int)heading * RAD_TO_DEG; //radians to degrees
+	homeBearing = (int)heading * RAD_TO_DEG; //radians to degrees
+
+	//TODO remove/debug
+	Serial.print("Lat: "); Serial.print(homeLatitude);
+	Serial.print(" Lon: "); Serial.print(homeLongitude);
+	Serial.print(" Alt: "); Serial.print(homeAltitude);
+	Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
 }
 
 void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
@@ -93,10 +102,10 @@ void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, 
 	lat2 = toRad(lat2);
 
 	//calculating bearing in degree decimal
-	Bearing = calculateBearing(lon1, lat1, lon2, lat2);
+	trackingBearing = calculateBearing(lon1, lat1, lon2, lat2);
 
 	//calculating distance between uav & home
-	Elevation = calculateElevation(lon1, lat1, lon2, lat2, alt);
+	trackingElevation = calculateElevation(lon1, lat1, lon2, lat2, alt);
 }
 
 int calculateBearing(float lon1, float lat1, float lon2, float lat2) {
@@ -119,7 +128,7 @@ int calculateElevation(float lon1, float lat1, float lon2, float lat2, int alt) 
 	a = sin(dLat / 2) * sin(dLat / 2) + sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2);
 	c = 2 * asin(sqrt(a));
 	d = (R * c);
-	home_dist = d / 10;
+	uavDistanceToHome = d / 10;
 	el = atan((float)alt / (10 * d));// in radian
 	el = toDeg(el); // in degree
 	return (int)round(el);

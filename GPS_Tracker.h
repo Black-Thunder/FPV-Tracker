@@ -9,6 +9,8 @@
 
 extern HMC5883L compass;
 
+extern bool isHomePositionSet;
+
 void updateGCSPosition();
 void updateGCSHeading();
 void servoPathfinder(int angle_b, int angle_a);

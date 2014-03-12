@@ -185,20 +185,20 @@ void processUsartData(void)
 	if (protocolType == 0) {
 		memcpy((char*)(&telemetryPacketAeroQuad), (char*)pRxData, sizeof(TelemetryPacket_t));
 
-		uav_satellites_visible = telemetryPacketAeroQuad.gpsinfo;
-		uav_lat = telemetryPacketAeroQuad.latitude / 1.0e7f;
-		uav_lon = telemetryPacketAeroQuad.longitude / 1.0e7f;
-		uav_alt = telemetryPacketAeroQuad.altitude / 10;
+		uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo;
+		uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
+		uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
+		uavAltitude = telemetryPacketAeroQuad.altitude / 10;
 	}
 	else if (protocolType == 1) {
 		if (RxdBuffer[2] == 'O') { // NC OSD Data
 			Decode64();
 			memcpy((char*)(&telemetryPacketMikrokopter), (char*)pRxData, sizeof(NaviData_t));
 
-			uav_satellites_visible = telemetryPacketMikrokopter.SatsInUse;
-			uav_lat = telemetryPacketMikrokopter.CurrentPosition.Latitude / 1.0e7f;
-			uav_lon = telemetryPacketMikrokopter.CurrentPosition.Longitude / 1.0e7f;
-			uav_alt = telemetryPacketMikrokopter.CurrentPosition.Altitude / 10;
+			uavSatellitesVisible = telemetryPacketMikrokopter.SatsInUse;
+			uavLatitude = telemetryPacketMikrokopter.CurrentPosition.Latitude / 1.0e7f;
+			uavLongitude = telemetryPacketMikrokopter.CurrentPosition.Longitude / 1.0e7f;
+			uavAltitude = telemetryPacketMikrokopter.CurrentPosition.Altitude / 10;
 		}
 	}
 
@@ -208,8 +208,8 @@ void processUsartData(void)
 	pRxData = 0;
 	RxDataLen = 0;
 
-	if (uav_satellites_visible > 5) hasGPSFix = true;
-	else hasGPSFix = false;
+	if (uavSatellitesVisible > 5) uavHasGPSFix = true;
+	else uavHasGPSFix = false;
 }
 
 /**

@@ -5,31 +5,33 @@
 #include <Servo.h>
 #include <pins_arduino.h>
 
-#define minTrackingDistance 5 //Minimum distance in meters before tracking will start
+#define minTrackingDistance 5					// Minimum distance in meters before tracking will start
+#define invalidPositionCoordinate 0x7FFFFFFF
+#define invalidAltitude 65535
 
 // Telemetry variables
-extern float        uav_lat;                    // latitude
-extern float        uav_lon;                    // longitude
-extern uint8_t      uav_satellites_visible;     // number of satelites
-extern int16_t      uav_alt;                    // altitude (dm)
+extern float        uavLatitude;                // latitude
+extern float        uavLongitude;               // longitude
+extern uint8_t      uavSatellitesVisible;		// number of satelites
+extern int16_t      uavAltitude;                // altitude (dm)
 
 // Home positioning data
-extern float home_lon;
-extern float home_lat;
-extern float home_dist;
-extern int home_alt;
-extern int home_bearing;
+extern float homeLongitude;
+extern float homeLatitude;
+extern float uavDistanceToHome;
+extern int homeAltitude;
+extern int homeBearing;
 
 // Status indicators
-extern bool hasGPSFix;
+extern bool uavHasGPSFix;
 extern bool isTelemetryOk;
 extern long lastPacketReceived;
 
 extern LiquidCrystal lcd;
 
 // Tracking variables
-extern int Bearing;
-extern int Elevation;
+extern int trackingBearing;
+extern int trackingElevation;
 
 const int verticalMin = 20;
 const int verticalMid = 70;
@@ -52,6 +54,6 @@ extern char verticalDirection;
 extern Servo VerticalServo;
 extern Servo HorizontalServo;
 
-extern char protocolType; // 0=AeroQuad protocol, 1=Mikrokopter protocol
+extern char protocolType;						// 0=AeroQuad protocol, 1=Mikrokopter protocol
 
 #endif
