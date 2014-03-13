@@ -56,7 +56,6 @@ void ubloxParseData() {// uses publib vars
 
 // process serial data
 int ubloxProcessData(unsigned char data) {
-
 	int parsed = 0;
 
 	switch (ubloxProcessDataState) {
@@ -142,5 +141,6 @@ int ubloxProcessData(unsigned char data) {
 		break;
 
 	}
+
 	return parsed;
 }

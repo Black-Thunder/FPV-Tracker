@@ -28,14 +28,15 @@ void updateGCSHeading() {
 	homeBearing = (int)heading * RAD_TO_DEG; //radians to degrees
 
 	//TODO remove/debug
-	Serial.print("Lat: "); Serial.print(homeLatitude);
-	Serial.print(" Lon: "); Serial.print(homeLongitude);
-	Serial.print(" Alt: "); Serial.print(homeAltitude);
-	Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
+        //Serial.print("State: "); Serial.print(gpsData.state);
+//	Serial.print(" Lat: "); Serial.print(homeLatitude);
+//	Serial.print(" Lon: "); Serial.print(homeLongitude);
+//	Serial.print(" Alt: "); Serial.print(homeAltitude);
+//	Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
 }
 
 void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
-	//find the best way to move pan servo considering 0° reference face toward
+	//find the best way to move pan servo considering 0ï¿½ reference face toward
 	if (angle_b <= 180) {
 		if (horizontalMax >= angle_b) {
 			if (angle_a <= verticalMin) {
@@ -48,14 +49,14 @@ void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
 			}
 		}
 		else if (horizontalMax < angle_b) {
-			//relevant for 180° tilt config only, in case bearing is superior to pan_maxangle
+			//relevant for 180ï¿½ tilt config only, in case bearing is superior to pan_maxangle
 			angle_b = 360 - (180 - angle_b);
 			if (angle_b >= 360) {
 				angle_b = angle_b - 360;
 			}
 			// invert pan axis 
 			if (verticalMax >= (180 - angle_a)) {
-				// invert pan & tilt for 180° Pan 180° Tilt config
+				// invert pan & tilt for 180ï¿½ Pan 180ï¿½ Tilt config
 				angle_a = 180 - angle_a;
 			}
 			else if (verticalMax < (180 - angle_a)) {

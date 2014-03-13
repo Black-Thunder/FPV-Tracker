@@ -66,13 +66,12 @@ void initializeGps() {
 // Read data from GPS, this should be called at 100Hz to make sure no data is lost
 // due to overflowing serial input buffer
 void updateGps() {
-
   gpsData.idlecount++;
 
   while (GPS_SERIAL.available()) {
     unsigned char c = GPS_SERIAL.read();
     int ret=0;
-
+ Serial.println(c, HEX);
     // If we are detecting run all parsers, stopping if any reports success
     if (gpsData.state == GPS_DETECTING) {
       for (gpsData.type=0; (gpsData.type < GPS_NUMTYPES); gpsData.type++) {

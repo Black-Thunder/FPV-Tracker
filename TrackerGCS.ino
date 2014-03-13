@@ -72,6 +72,8 @@ unsigned long deltaTime = 0;
 
 void setup()
 {
+        Serial.begin(115200);
+  
 	determineTrackingMode();
 
 	lcd.begin(16, 2);
@@ -83,21 +85,7 @@ void setup()
 	if (trackingMode == 0) {
 		lcd.setCursor(0, 0);
 		lcd.print("Mode: RSSI");
-
-		lcd.setCursor(0, 1);
-		lcd.print("Calibrating...");
-
-		for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
-			calibrate1 = calibrate1 + analogRead(rssi1);
-			delay(25);
-		}
-		calibrate1 = calibrate1 / NUMBER_OF_SAMPLES;
-
-		for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
-			calibrate2 = calibrate2 + analogRead(rssi2);
-			delay(25);
-		}
-		calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
+                delay(1000); // Keep LCD message visible
 	}
 	else if (trackingMode == 1) {
 		lcd.setCursor(0, 0);
@@ -106,7 +94,7 @@ void setup()
 		determineProtocolType();
 		delay(1000); // Keep LCD message visible
 
-		usart0_Init();
+		//usart0_Init();
 
 		//already done by OSD
 		//usart0_request_nc_uart();
@@ -114,6 +102,26 @@ void setup()
 		initializeGps();
 		setupHMC5883L();
 	}
+
+        calibrateRSSI();
+}
+
+void calibrateRSSI() {
+        lcd.clear();
+ 	lcd.setCursor(0, 0);
+	lcd.print("Calibrating...");
+
+	for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
+		calibrate1 = calibrate1 + analogRead(rssi1);
+		delay(50);
+	}
+	calibrate1 = calibrate1 / NUMBER_OF_SAMPLES;
+
+	for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
+		calibrate2 = calibrate2 + analogRead(rssi2);
+		delay(50);
+	}
+	calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;     
 }
 
 void setupHMC5883L(){
@@ -155,6 +163,8 @@ void loop()
 	// 100Hz task loop
 	// ================================================================
 	if (deltaTime >= 10000) {
+                process100HzTask();
+  
 		frameCounter++;
 		previousTime = currentTime;
 	}
@@ -176,6 +186,12 @@ void loop()
 	}
 }
 
+void process100HzTask() {
+  	if (trackingMode == 1) {
+  	        updateGps();
+        }
+}
+
 void process10HzTask() {
 	if (trackingMode == 1) {
 		// request OSD Data from NC every 100ms, already requested by OSD
@@ -190,9 +206,11 @@ void process10HzTask() {
 }
 
 void process5HzTask() {
-	updateGps();
-	updateGCSPosition();
-	updateGCSHeading();
+  	if (trackingMode == 1) {
+	        updateGCSPosition();
+  	        updateGCSHeading();
+        }
+        
 	processTracking();
 }
 
