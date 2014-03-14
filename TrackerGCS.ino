@@ -78,10 +78,10 @@ void setup()
 	determineTrackingMode();
 
 	lcd.begin(16, 2);
-	//VerticalServo.attach(10);
-	//VerticalServo.write(verticalMid);
-	//HorizontalServo.attach(11);
-	//HorizontalServo.write(horizontalMid);
+	VerticalServo.attach(10);
+	VerticalServo.write(verticalMid);
+	HorizontalServo.attach(11);
+	HorizontalServo.write(horizontalMid);
 
 	if (trackingMode == 0) {
 		lcd.setCursor(0, 0);
