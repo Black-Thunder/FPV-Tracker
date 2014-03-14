@@ -1,9 +1,28 @@
 #include "Wire.h"
 #include "HMC5883L.h"
+#include "Arduino.h"
+
+uint8_t readWhoI2C(int deviceAddress) {
+	// read the ID of the I2C device
+	Wire.beginTransmission(deviceAddress);
+	Wire.write((uint8_t)0);
+	Wire.endTransmission();
+	delay(100);
+	Wire.requestFrom(deviceAddress, 1);
+	return Wire.read();
+}
 
 HMC5883L::HMC5883L()
 {
 	m_Scale = 1;
+}
+
+void HMC5883L::CheckConnectionState() {
+
+	if (readWhoI2C(HMC5883L_Address) == COMPASS_IDENTITY)
+		isMagDetected = true;
+	else
+		isMagDetected = false;
 }
 
 MagnetometerRaw HMC5883L::ReadRawAxis()

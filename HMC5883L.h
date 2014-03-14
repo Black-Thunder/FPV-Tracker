@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define HMC5883L_Address 0x1E
+#define COMPASS_IDENTITY 0x10
 #define ConfigurationRegisterA 0x00
 #define ConfigurationRegisterB 0x01
 #define ModeRegister 0x02
@@ -32,11 +33,15 @@ class HMC5883L
 public:
 	HMC5883L();
 
+	void CheckConnectionState();
+
 	MagnetometerRaw ReadRawAxis();
 	MagnetometerScaled ReadScaledAxis();
 
 	void SetMeasurementMode(uint8_t mode);
 	void SetScale(float gauss);
+
+	bool isMagDetected;
 
 protected:
 	void Write(int address, int byte);

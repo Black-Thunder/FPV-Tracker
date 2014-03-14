@@ -78,10 +78,10 @@ void setup()
 	determineTrackingMode();
 
 	lcd.begin(16, 2);
-	VerticalServo.attach(10);
-	VerticalServo.write(verticalMid);
-	HorizontalServo.attach(11);
-	HorizontalServo.write(horizontalMid);
+	//VerticalServo.attach(10);
+	//VerticalServo.write(verticalMid);
+	//HorizontalServo.attach(11);
+	//HorizontalServo.write(horizontalMid);
 
 	if (trackingMode == 0) {
 		lcd.setCursor(0, 0);
@@ -127,8 +127,21 @@ void calibrateRSSI() {
 
 void setupHMC5883L(){
 	compass = HMC5883L();
-	compass.SetScale(1.3); //Set the scale of the compass.
-	compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
+	compass.CheckConnectionState();
+
+	if (compass.isMagDetected) {
+		compass.SetScale(1.3); //Set the scale of the compass.
+		compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
+	}
+	else {
+		lcd.clear();
+		lcd.setCursor(0, 0);
+		lcd.print("Mag Failure!");
+		lcd.setCursor(0, 1);
+		lcd.print("Heading set to 0");
+
+		delay(2000);  // Keep LCD message visible
+	}
 }
 
 void determineTrackingMode() {
@@ -209,7 +222,13 @@ void process10HzTask() {
 void process5HzTask() {
 	if (trackingMode == 1) {
 		updateGCSPosition();
-		updateGCSHeading();
+
+		if (compass.isMagDetected) {
+			updateGCSHeading();
+		}
+		else {
+			homeBearing = 0;
+		}
 	}
 
 	processTracking();
