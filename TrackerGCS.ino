@@ -72,8 +72,9 @@ unsigned long deltaTime = 0;
 
 void setup()
 {
-        Serial.begin(115200);
-  
+	//TODO remove/debug
+	Serial.begin(115200);
+
 	determineTrackingMode();
 
 	lcd.begin(16, 2);
@@ -85,7 +86,7 @@ void setup()
 	if (trackingMode == 0) {
 		lcd.setCursor(0, 0);
 		lcd.print("Mode: RSSI");
-                delay(1000); // Keep LCD message visible
+		delay(1000); // Keep LCD message visible
 	}
 	else if (trackingMode == 1) {
 		lcd.setCursor(0, 0);
@@ -103,12 +104,12 @@ void setup()
 		setupHMC5883L();
 	}
 
-        calibrateRSSI();
+	calibrateRSSI();
 }
 
 void calibrateRSSI() {
-        lcd.clear();
- 	lcd.setCursor(0, 0);
+	lcd.clear();
+	lcd.setCursor(0, 0);
 	lcd.print("Calibrating...");
 
 	for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
@@ -121,7 +122,7 @@ void calibrateRSSI() {
 		calibrate2 = calibrate2 + analogRead(rssi2);
 		delay(50);
 	}
-	calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;     
+	calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
 }
 
 void setupHMC5883L(){
@@ -163,8 +164,8 @@ void loop()
 	// 100Hz task loop
 	// ================================================================
 	if (deltaTime >= 10000) {
-                process100HzTask();
-  
+		process100HzTask();
+
 		frameCounter++;
 		previousTime = currentTime;
 	}
@@ -187,9 +188,9 @@ void loop()
 }
 
 void process100HzTask() {
-  	if (trackingMode == 1) {
-  	        updateGps();
-        }
+	if (trackingMode == 1) {
+		updateGps();
+	}
 }
 
 void process10HzTask() {
@@ -206,11 +207,11 @@ void process10HzTask() {
 }
 
 void process5HzTask() {
-  	if (trackingMode == 1) {
-	        updateGCSPosition();
-  	        updateGCSHeading();
-        }
-        
+	if (trackingMode == 1) {
+		updateGCSPosition();
+		updateGCSHeading();
+	}
+
 	processTracking();
 }
 

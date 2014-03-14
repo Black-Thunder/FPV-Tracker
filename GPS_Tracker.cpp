@@ -28,10 +28,11 @@ void updateGCSHeading() {
 	homeBearing = (int)heading * RAD_TO_DEG; //radians to degrees
 
 	//TODO remove/debug
-        //Serial.print("State: "); Serial.print(gpsData.state);
-//	Serial.print(" Lat: "); Serial.print(homeLatitude);
-//	Serial.print(" Lon: "); Serial.print(homeLongitude);
-//	Serial.print(" Alt: "); Serial.print(homeAltitude);
+	Serial.print("State: "); Serial.print(gpsData.state);
+	Serial.print(" Lat: "); Serial.print(homeLatitude);
+	Serial.print(" Lon: "); Serial.print(homeLongitude);
+	Serial.print(" Alt: "); Serial.print(homeAltitude);
+	Serial.print(" Sats: "); Serial.print(gpsData.sats); Serial.println();
 //	Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
 }
 
