@@ -28,7 +28,6 @@ enum {
     GPS_MTK16 = 2
 };
 
-
 #define GPS_INVALID_POSITION {GPS_INVALID_ANGLE, GPS_INVALID_ANGLE, GPS_INVALID_ALTITUDE}
 
 struct GeodeticPosition {
@@ -52,11 +51,6 @@ struct gpsData {
     uint8_t  type;     // current type - used by autodetection
     uint32_t idlecount; // how many times gpsUpdate has been called without getting a valid message
     int32_t  velN,velE,velD; // cm/s
-};
-
-struct gpsConfigEntry {
-  const unsigned char *data;
-  const unsigned char len;
 };
 
 #endif

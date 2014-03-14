@@ -10,10 +10,15 @@ void updateGCSPosition() {
 	if (haveAGpsLock()) {
 		homeLatitude = gpsData.lat / 1.0e7f;
 		homeLongitude = gpsData.lon / 1.0e7f;
-		homeAltitude = gpsData.height / 10;
 
 		isHomePositionSet = true;
 	}
+
+	//TODO remove/debug
+	Serial.print("State: "); Serial.print(gpsData.state);
+	Serial.print(" Lat: "); Serial.print(gpsData.lat); Serial.print(" "); Serial.print(homeLatitude, 5);
+	Serial.print(" Lon: "); Serial.print(gpsData.lon); Serial.print(" "); Serial.print(homeLongitude, 5);
+	Serial.print(" Sats: "); Serial.print(gpsData.sats); Serial.println();
 }
 
 void updateGCSHeading() {
@@ -28,11 +33,6 @@ void updateGCSHeading() {
 	homeBearing = (int)heading * RAD_TO_DEG; //radians to degrees
 
 	//TODO remove/debug
-	Serial.print("State: "); Serial.print(gpsData.state);
-	Serial.print(" Lat: "); Serial.print(homeLatitude);
-	Serial.print(" Lon: "); Serial.print(homeLongitude);
-	Serial.print(" Alt: "); Serial.print(homeAltitude);
-	Serial.print(" Sats: "); Serial.print(gpsData.sats); Serial.println();
 //	Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
 }
 

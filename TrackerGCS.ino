@@ -5,7 +5,7 @@
 #include "GPS_Tracker.h"
 #include "GPS_Adapter.h"
 #include "HMC5883L.h"
-#include "uart.h"
+#include "uart1.h"
 #include "Mikrokopter_Datastructs.h"
 #include "AeroQuad_Datastructs.h"
 
@@ -13,7 +13,6 @@
 const int horizontalTolerance = 2;
 const int thresholdValue = 80;
 
-int trackingCounter = 0;
 int calibrate1 = 0;
 int calibrate2 = 0;
 int i = horizontalMid;
@@ -95,10 +94,10 @@ void setup()
 		determineProtocolType();
 		delay(1000); // Keep LCD message visible
 
-		//usart0_Init();
+		usart1_init();
 
 		//already done by OSD
-		//usart0_request_nc_uart();
+		//usart1_request_nc_uart();
 
 		initializeGps();
 		setupHMC5883L();
@@ -209,13 +208,13 @@ void process100HzTask() {
 void process10HzTask() {
 	if (trackingMode == 1) {
 		// request OSD Data from NC every 100ms, already requested by OSD
-		//usart0_puts_pgm(PSTR(REQUEST_OSD_DATA));
+		//usart1_puts_pgm(PSTR(REQUEST_OSD_DATA));
 
 		if (millis() - lastPacketReceived > 2000) {
 			isTelemetryOk = false;
 		}
 
-		processUsartData();
+		processUsart1Data();
 	}
 }
 
@@ -242,48 +241,35 @@ void processTracking() {
 	readRSSI();
 
 	if (trackingMode == 0) {
-		if (rssiTrack <= thresholdValue) {
-			if (trackingCounter < 15) {
-				trackingCounter++;
-				calculateRSSIDiff();
+	        if (rssiTrack <= thresholdValue) {
+		        calculateRSSIDiff();
 
-				if (rssiDiv <= horizontalTolerance) {
-					if (rssiTrack <= 45) {
-						VerticalServo.write(verticalMid);
+			if (rssiDiv <= horizontalTolerance) {
+				if (rssiTrack <= 45) {
+					VerticalServo.write(verticalMid);
 
-						if (i >= horizontalMid) {
-							i = i - 30;
-							horizontalDirection = 'L';
-						}
-						else {
-							i = i + 30;
-							horizontalDirection = 'R';
-						}
+					if (i >= horizontalMid) {
+						i = i - 30;
+						horizontalDirection = 'L';
 					}
 					else {
-						trackVertical();
+						i = i + 30;
+						horizontalDirection = 'R';
 					}
 				}
 				else {
-					trackHorizontal();
+					trackVertical();
 				}
 			}
 			else {
-				//Temporarilly stop tracking if threshold can't be exceeded for more than 3 seconds
-				HorizontalServo.write(horizontalMid);
-				VerticalServo.write(verticalMid);
+				trackHorizontal();
 			}
-		}
-		else {
-			trackingCounter = 0;
 		}
 	}
 	else if (trackingMode == 1) {
 		// Only move servo if home position is set, otherwise standby to last known position
 		if (isHomePositionSet && isTelemetryOk) {
-
-			int relativeAltitude = uavAltitude - homeAltitude;
-			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, relativeAltitude); //calculate tracking bearing/azimuth
+			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude); //calculate tracking bearing/azimuth
 
 			//set current GPS bearing relative to homeBearing
 			if (trackingBearing >= homeBearing) {

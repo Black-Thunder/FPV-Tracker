@@ -18,6 +18,7 @@ void ubloxInit() {
 // process complete binary packet
 void ubloxParseData() {// uses publib vars
 	gpsData.sentences++;
+//Serial.print(ubloxClass); Serial.print(" "); Serial.print(ubloxId); Serial.println();
 	if (ubloxClass == 1) { // NAV
 		if (ubloxId == 2) { // NAV:POSLLH
 			gpsData.lat = ubloxMessage.nav_posllh.lat;

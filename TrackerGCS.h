@@ -19,7 +19,6 @@ extern int16_t      uavAltitude;                // altitude (dm)
 extern float homeLongitude;
 extern float homeLatitude;
 extern float uavDistanceToHome;
-extern int homeAltitude;
 extern int homeBearing;
 
 // Status indicators

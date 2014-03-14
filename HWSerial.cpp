@@ -88,20 +88,31 @@ inline void store_char(unsigned char c, ring_buffer *buffer)
   void serialEvent() __attribute__((weak));
   void serialEvent() {}
   #define serialEvent_implemented
+  #if defined(USART_RX_vect)
+  ISR(USART_RX_vect)
+#elif defined(USART0_RX_vect)
+  ISR(USART0_RX_vect)
+#elif defined(USART_RXC_vect)
+  ISR(USART_RXC_vect) // ATmega8
 #endif
-#endif
-
-#if defined(USART1_RX_vect)
-  void serialEvent1() __attribute__((weak));
-  void serialEvent1() {}
-  #define serialEvent1_implemented
-  ISR(USART1_RX_vect)
   {
-    if (bit_is_clear(UCSR1A, UPE1)) {
-      unsigned char c = UDR1;
-      store_char(c, &rx_buffer1);
+  #if defined(UDR0)
+    if (bit_is_clear(UCSR0A, UPE0)) {
+      unsigned char c = UDR0;
+      store_char(c, &rx_buffer);
+    } ;
+  #elif defined(UDR)
+    if (bit_is_clear(UCSRA, PE)) {
+      unsigned char c = UDR;
+      store_char(c, &rx_buffer);
+    } else {
+      unsigned char c = UDR;
     };
+  #else
+    #error UDR not defined
+  #endif
   }
+#endif
 #endif
 
 #if defined(USART2_RX_vect) && defined(UDR2)
