@@ -27,6 +27,7 @@ char verticalDirection = 0;
 char trackingMode = 0; // 0=RSSI-Tracking, 1=GPS-Tracking
 char protocolType = 0;
 const int protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
+bool lastProtocolTypeSwitchState = LOW;
 
 float uavLatitude = invalidPositionCoordinate;
 float uavLongitude = invalidPositionCoordinate;
@@ -36,7 +37,6 @@ int16_t uavAltitude = invalidAltitude;
 float homeLongitude = invalidPositionCoordinate;
 float homeLatitude = invalidPositionCoordinate;
 float uavDistanceToHome = 0;
-int homeAltitude = invalidAltitude;
 int homeBearing = 0;
 
 int trackingBearing = 0;
@@ -48,6 +48,7 @@ long lastPacketReceived = 0;
 
 // General
 const int trackingModeSwitchPin = 9; // Switch to determine tracking mode on start-up; LOW=RSSI, HIGH=GPS
+bool lastTrackingModeSwitchState = LOW;
 
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
@@ -82,27 +83,6 @@ void setup()
 	HorizontalServo.attach(11);
 	HorizontalServo.write(horizontalMid);
 
-	if (trackingMode == 0) {
-		lcd.setCursor(0, 0);
-		lcd.print("Mode: RSSI");
-		delay(1000); // Keep LCD message visible
-	}
-	else if (trackingMode == 1) {
-		lcd.setCursor(0, 0);
-		lcd.print("Mode: GPS");
-
-		determineProtocolType();
-		delay(1000); // Keep LCD message visible
-
-		usart1_init();
-
-		//already done by OSD
-		//usart1_request_nc_uart();
-
-		initializeGps();
-		setupHMC5883L();
-	}
-
 	calibrateRSSI();
 }
 
@@ -122,6 +102,19 @@ void calibrateRSSI() {
 		delay(50);
 	}
 	calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
+}
+
+void setupGPSTrackingMode() {
+        determineProtocolType();
+	delay(1000); // Keep LCD message visible
+
+	usart1_init();
+
+	//already done by OSD
+	//usart1_request_nc_uart();
+
+	initializeGps();
+	setupHMC5883L();  
 }
 
 void setupHMC5883L(){
@@ -146,21 +139,34 @@ void setupHMC5883L(){
 void determineTrackingMode() {
 	if (digitalRead(trackingModeSwitchPin) == HIGH) {
 		trackingMode = 1;
+                lastTrackingModeSwitchState = HIGH;
+                
+                lcd.setCursor(0, 0);
+		lcd.print("Mode: RSSI");
+		delay(1000); // Keep LCD message visible
 	}
 	else {
 		trackingMode = 0;
+                lastTrackingModeSwitchState = LOW;
+                
+                lcd.setCursor(0, 0);
+		lcd.print("Mode: GPS");
+
+                setupGPSTrackingMode();
 	}
 }
 
 void determineProtocolType() {
 	if (digitalRead(protocolTypeSwitchPin) == HIGH) {
 		protocolType = 1;
+                lastProtocolTypeSwitchState = HIGH;
 
 		lcd.setCursor(0, 1);
 		lcd.print("Protocol: MK");
 	}
 	else {
 		protocolType = 0;
+                lastProtocolTypeSwitchState = LOW;
 
 		lcd.setCursor(0, 1);
 		lcd.print("Protocol: AQ");
@@ -235,6 +241,7 @@ void process5HzTask() {
 
 void process1HzTask() {
 	updateLCD();
+        checkSwitchState();
 }
 
 void processTracking() {
@@ -294,6 +301,13 @@ void updateLCD() {
 	lcd.setCursor(0, 1);
 	lcd.print("RSSI Fix   ");
 	lcd.print(rssiFix);
+}
+
+void checkSwitchState() {
+        if(digitalRead(trackingModeSwitchPin) != lastTrackingModeSwitchState) {
+                determineTrackingMode();
+        }
+          
 }
 
 void readRSSI() {
