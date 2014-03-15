@@ -24,7 +24,7 @@ char verticalDirection = 0;
 #define NUMBER_OF_SAMPLES 10
 
 // GPS tracking
-char trackingMode = 0; // 0=RSSI-Tracking, 1=GPS-Tracking
+char trackingMode = 0; // 1=RSSI-Tracking, 0=GPS-Tracking
 char protocolType = 0;
 const int protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
 bool lastProtocolTypeSwitchState = LOW;
@@ -75,9 +75,10 @@ void setup()
 	//TODO remove/debug
 	Serial.begin(115200);
 
-	determineTrackingMode();
-
 	lcd.begin(16, 2);
+
+        determineTrackingMode();
+
 	VerticalServo.attach(10);
 	VerticalServo.write(verticalMid);
 	HorizontalServo.attach(11);
@@ -206,13 +207,13 @@ void loop()
 }
 
 void process100HzTask() {
-	if (trackingMode == 1) {
+	if (trackingMode == 0) {
 		updateGps();
 	}
 }
 
 void process10HzTask() {
-	if (trackingMode == 1) {
+	if (trackingMode == 0) {
 		// request OSD Data from NC every 100ms, already requested by OSD
 		//usart1_puts_pgm(PSTR(REQUEST_OSD_DATA));
 
@@ -225,7 +226,7 @@ void process10HzTask() {
 }
 
 void process5HzTask() {
-	if (trackingMode == 1) {
+	if (trackingMode == 0) {
 		updateGCSPosition();
 
 		if (compass.isMagDetected) {
@@ -247,7 +248,7 @@ void process1HzTask() {
 void processTracking() {
 	readRSSI();
 
-	if (trackingMode == 0) {
+	if (trackingMode == 1) {
 	        if (rssiTrack <= thresholdValue) {
 		        calculateRSSIDiff();
 
@@ -273,7 +274,7 @@ void processTracking() {
 			}
 		}
 	}
-	else if (trackingMode == 1) {
+	else if (trackingMode == 0) {
 		// Only move servo if home position is set, otherwise standby to last known position
 		if (isHomePositionSet && isTelemetryOk) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude); //calculate tracking bearing/azimuth
@@ -305,9 +306,15 @@ void updateLCD() {
 
 void checkSwitchState() {
         if(digitalRead(trackingModeSwitchPin) != lastTrackingModeSwitchState) {
+                lcd.clear();
+        
                 determineTrackingMode();
         }
-          
+        if(trackingMode == 0 && digitalRead(protocolTypeSwitchPin) != lastProtocolTypeSwitchState) {
+                lcd.clear();
+        
+                determineProtocolType(); 
+        } 
 }
 
 void readRSSI() {
