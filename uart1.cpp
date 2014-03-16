@@ -25,7 +25,13 @@ void usart1_init() {
     UBRR1L = (F_CPU / (16UL * USART1_BAUD)) - 1;
 
     // Enable receiver and transmitter; enable RX interrupt
-    UCSR1B = (1 << RXEN1) | (1 << TXEN1) | (1 << RXCIE1);
+    UCSR1B |= (1 << RXEN1) | (1 << TXEN1) | (1 << RXCIE1);
+
+	// UART Double Speed (U2X), enable RX interrupt
+	UCSR1A |= (1 << U2X1) | (1 << RXC1) ;
+
+	// Global interrupt flag
+	SREG |= (1 << 7);
 }
 
 /**

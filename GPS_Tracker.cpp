@@ -33,7 +33,7 @@ void updateGCSHeading() {
 	homeBearing = (int)heading * RAD_TO_DEG; //radians to degrees
 
 	//TODO remove/debug
-//	Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
+	//Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
 }
 
 void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )

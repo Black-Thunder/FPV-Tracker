@@ -10,13 +10,6 @@
 #define u32 uint32_t
 #define s32 int32_t
 
-#define FC_ADDRESS 1
-#define NC_ADDRESS 2
-#define MK3MAG_ADDRESS 3
-#define BL_CTRL_ADDRESS 5
-
-#define ABO_TIMEOUT 4000 // disable abo after 4 seconds
-
 typedef struct {
     s32 Longitude; // in 1E-7 deg
     s32 Latitude; // in 1E-7 deg

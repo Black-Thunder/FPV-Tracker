@@ -77,7 +77,7 @@ void setup()
 
 	lcd.begin(16, 2);
 
-        determineTrackingMode();
+	determineTrackingMode();
 
 	VerticalServo.attach(10);
 	VerticalServo.write(verticalMid);
@@ -106,16 +106,19 @@ void calibrateRSSI() {
 }
 
 void setupGPSTrackingMode() {
-        determineProtocolType();
+	determineProtocolType();
 	delay(1000); // Keep LCD message visible
 
 	usart1_init();
+	usart1_DisableTXD();
 
-	//already done by OSD
-	//usart1_request_nc_uart();
+	//request NC uart from MK, already done by C-OSD/Smart-OSD
+	//if (protocolType == 1) {
+	//	usart1_request_nc_uart();
+	//}
 
 	initializeGps();
-	setupHMC5883L();  
+	setupHMC5883L();
 }
 
 void setupHMC5883L(){
@@ -140,34 +143,34 @@ void setupHMC5883L(){
 void determineTrackingMode() {
 	if (digitalRead(trackingModeSwitchPin) == HIGH) {
 		trackingMode = 1;
-                lastTrackingModeSwitchState = HIGH;
-                
-                lcd.setCursor(0, 0);
+		lastTrackingModeSwitchState = HIGH;
+
+		lcd.setCursor(0, 0);
 		lcd.print("Mode: RSSI");
 		delay(1000); // Keep LCD message visible
 	}
 	else {
 		trackingMode = 0;
-                lastTrackingModeSwitchState = LOW;
-                
-                lcd.setCursor(0, 0);
+		lastTrackingModeSwitchState = LOW;
+
+		lcd.setCursor(0, 0);
 		lcd.print("Mode: GPS");
 
-                setupGPSTrackingMode();
+		setupGPSTrackingMode();
 	}
 }
 
 void determineProtocolType() {
 	if (digitalRead(protocolTypeSwitchPin) == HIGH) {
 		protocolType = 1;
-                lastProtocolTypeSwitchState = HIGH;
+		lastProtocolTypeSwitchState = HIGH;
 
 		lcd.setCursor(0, 1);
 		lcd.print("Protocol: MK");
 	}
 	else {
 		protocolType = 0;
-                lastProtocolTypeSwitchState = LOW;
+		lastProtocolTypeSwitchState = LOW;
 
 		lcd.setCursor(0, 1);
 		lcd.print("Protocol: AQ");
@@ -214,14 +217,17 @@ void process100HzTask() {
 
 void process10HzTask() {
 	if (trackingMode == 0) {
-		// request OSD Data from NC every 100ms, already requested by OSD
-		//usart1_puts_pgm(PSTR(REQUEST_OSD_DATA));
+		// Request data from MK, this is already done by C-OSD/Smart-OSD
+		//if (protocolType == 1) {
+		//	requestMikrokopterTelemetryData();
+		//}
 
+		processUsart1Data();
+
+		// No telemetry data received for more than 2 seconds
 		if (millis() - lastPacketReceived > 2000) {
 			isTelemetryOk = false;
 		}
-
-		processUsart1Data();
 	}
 }
 
@@ -242,15 +248,15 @@ void process5HzTask() {
 
 void process1HzTask() {
 	updateLCD();
-        checkSwitchState();
+	checkSwitchState();
 }
 
 void processTracking() {
 	readRSSI();
 
 	if (trackingMode == 1) {
-	        if (rssiTrack <= thresholdValue) {
-		        calculateRSSIDiff();
+		if (rssiTrack <= thresholdValue) {
+			calculateRSSIDiff();
 
 			if (rssiDiv <= horizontalTolerance) {
 				if (rssiTrack <= 45) {
@@ -305,16 +311,16 @@ void updateLCD() {
 }
 
 void checkSwitchState() {
-        if(digitalRead(trackingModeSwitchPin) != lastTrackingModeSwitchState) {
-                lcd.clear();
-        
-                determineTrackingMode();
-        }
-        if(trackingMode == 0 && digitalRead(protocolTypeSwitchPin) != lastProtocolTypeSwitchState) {
-                lcd.clear();
-        
-                determineProtocolType(); 
-        } 
+	if (digitalRead(trackingModeSwitchPin) != lastTrackingModeSwitchState) {
+		lcd.clear();
+
+		determineTrackingMode();
+	}
+	if (trackingMode == 0 && digitalRead(protocolTypeSwitchPin) != lastProtocolTypeSwitchState) {
+		lcd.clear();
+
+		determineProtocolType();
+	}
 }
 
 void readRSSI() {
@@ -326,3 +332,13 @@ void readRSSI() {
 	rssiTrack = constrain(rssiTrack, 0, 100);
 	rssiFix = constrain(rssiFix, 0, 100);
 }
+
+// called at 10Hz
+//void requestMikrokopterTelemetryData() {
+//	usart1_EnableTXD();
+//
+//	// request OSD Data from NC every 100ms
+//	usart1_puts_pgm(PSTR(REQUEST_OSD_DATA));
+//
+//	usart1_DisableTXD();
+//}
