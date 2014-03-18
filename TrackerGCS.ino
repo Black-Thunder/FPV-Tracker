@@ -56,6 +56,9 @@ int rssiTrack = 0;
 int rssiFix = 0;
 int rssiTrackOld = 0;
 
+int servoCommands[2] = { verticalMid, horizontalMid };
+int previousServoCommands[2] = { verticalMid, horizontalMid };
+
 Servo VerticalServo;
 Servo HorizontalServo;
 
@@ -70,8 +73,7 @@ unsigned long deltaTime = 0;
 #define TASK_5HZ 20
 #define TASK_1HZ 100
 
-void setup()
-{
+void setup() {
 	//TODO remove/debug
 	Serial.begin(115200);
 
@@ -79,10 +81,8 @@ void setup()
 
 	determineTrackingMode();
 
-	VerticalServo.attach(10);
-	VerticalServo.write(verticalMid);
-	HorizontalServo.attach(11);
-	HorizontalServo.write(horizontalMid);
+	VerticalServo.attach(verticalServoPin);
+	HorizontalServo.attach(horizontalServoPin);
 
 	calibrateRSSI();
 }
@@ -177,8 +177,7 @@ void determineProtocolType() {
 	}
 }
 
-void loop()
-{
+void loop() {
 	currentTime = micros();
 	deltaTime = currentTime - previousTime;
 
@@ -188,31 +187,53 @@ void loop()
 	if (deltaTime >= 10000) {
 		process100HzTask();
 
+		// ================================================================
+		// 50Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_50HZ == 0) { // 50 Hz tasks
+			process50HzTask();
+		}
+
 		frameCounter++;
+
+		// ================================================================
+		// 10Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_10HZ == 0) {  // 10 Hz tasks
+			process10HzTask();
+		}
+
+		// ================================================================
+		// 5Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_5HZ == 0) {  //  5 Hz tasks
+			process5HzTask();
+		}
+
+		// ================================================================
+		// 1Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_1HZ == 0) {  //  1 Hz tasks
+			process1HzTask();
+		}
+
 		previousTime = currentTime;
-	}
-
-	if (frameCounter % TASK_10HZ == 0) {   //   10 Hz tasks
-		process10HzTask();
-	}
-
-	if (frameCounter % TASK_5HZ == 0) {  //  5 Hz tasks
-		process5HzTask();
-	}
-
-	if (frameCounter % TASK_1HZ == 0) {  //   1 Hz tasks
-		process1HzTask();
 	}
 
 	if (frameCounter >= 100) {
 		frameCounter = 0;
 	}
+
 }
 
 void process100HzTask() {
 	if (trackingMode == 0) {
 		updateGps();
 	}
+}
+
+void process50HzTask() {
+	writeServos();
 }
 
 void process10HzTask() {
@@ -260,7 +281,7 @@ void processTracking() {
 
 			if (rssiDiv <= horizontalTolerance) {
 				if (rssiTrack <= 45) {
-					VerticalServo.write(verticalMid);
+					applyServoCommand(verticalServo, verticalMid);
 
 					if (i >= horizontalMid) {
 						i = i - 30;
@@ -283,7 +304,7 @@ void processTracking() {
 	else if (trackingMode == 0) {
 		// Only move servo if home position is set, otherwise standby to last known position
 		if (isHomePositionSet && isTelemetryOk) {
-			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude); //calculate tracking bearing/azimuth
+			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
 
 			//set current GPS bearing relative to homeBearing
 			if (trackingBearing >= homeBearing) {
@@ -297,6 +318,30 @@ void processTracking() {
 				servoPathfinder(trackingBearing, trackingElevation);
 			}
 		}
+	}
+}
+
+void applyServoCommand(int servo, int value) {
+	if (servo > 1) return;
+
+	if (servo == verticalServo) {
+		value = constrain(value, verticalMin, verticalMax);
+	}
+	else if (servo == horizontalServo) {
+		value = constrain(value, horizontalMin, horizontalMax);
+	}
+
+	previousServoCommands[servo] = servoCommands[servo];
+	servoCommands[servo] = value;
+}
+
+void writeServos() {
+	if (previousServoCommands[verticalServo] != servoCommands[verticalServo]) {
+		VerticalServo.write(servoCommands[verticalServo]);
+	}
+
+	if (previousServoCommands[horizontalServo] != servoCommands[horizontalServo]) {
+		HorizontalServo.write(servoCommands[horizontalServo]);
 	}
 }
 

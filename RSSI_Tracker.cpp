@@ -33,7 +33,7 @@ void trackHorizontal() {
 		}
 	}
 
-	HorizontalServo.write(i);
+	applyServoCommand(horizontalServo, i);
 
 	if (i <= horizontalMin || i >= horizontalMax) {
 		lcd.clear();
@@ -41,12 +41,11 @@ void trackHorizontal() {
 		lcd.print("Reset");
 
 		i = horizontalMid;
-		HorizontalServo.write(horizontalMid);
-		VerticalServo.write(verticalMid);
+		applyServoCommand(horizontalServo, horizontalMid);
+		applyServoCommand(verticalServo, verticalMid);
 		return;
 	}
 }
-
 
 void trackVertical() {
 	if (rssiTrack > rssiTrackOld) {
@@ -71,7 +70,7 @@ void trackVertical() {
 		}
 	}
 
-	VerticalServo.write(y);
+	applyServoCommand(verticalServo, y);
 
 	if (y <= verticalMin || y >= verticalMax) {
 		lcd.clear();

@@ -9,6 +9,11 @@
 #define invalidPositionCoordinate 0x7FFFFFFF
 #define invalidAltitude 65535
 
+#define verticalServoPin 10
+#define horizontalServoPin 11
+#define verticalServo 0
+#define horizontalServo 1
+
 // Telemetry variables
 extern float        uavLatitude;                // latitude
 extern float        uavLongitude;               // longitude
@@ -54,5 +59,7 @@ extern Servo VerticalServo;
 extern Servo HorizontalServo;
 
 extern char protocolType;						// 0=AeroQuad protocol, 1=Mikrokopter protocol
+
+extern void applyServoCommand(int servo, int value);
 
 #endif

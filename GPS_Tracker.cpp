@@ -87,11 +87,8 @@ void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
 		}
 	}
 
-	angle_a = constrain(angle_a, verticalMin, verticalMax);
-	angle_b = constrain(angle_b, horizontalMin, horizontalMax);
-
-	HorizontalServo.write(angle_b);
-	VerticalServo.write(angle_a);
+	applyServoCommand(horizontalServo, angle_b);
+	applyServoCommand(verticalServo, angle_a);
 }
 
 void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, int alt) {
