@@ -57,7 +57,7 @@ int rssiFix = 0;
 int rssiTrackOld = 0;
 
 int servoCommands[2] = { verticalMid, horizontalMid };
-int previousServoCommands[2] = { verticalMid, horizontalMid };
+int previousServoCommands[2] = { 0, 0 };
 
 Servo VerticalServo;
 Servo HorizontalServo;
