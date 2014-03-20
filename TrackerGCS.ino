@@ -57,7 +57,7 @@ int rssiFix = 0;
 int rssiTrackOld = 0;
 
 int servoCommands[2] = { verticalMid, horizontalMid };
-int previousServoCommands[2] = { 0, 0 };
+int previousServoCommands[2] = { -1, -1 };
 
 Servo VerticalServo;
 Servo HorizontalServo;
@@ -258,8 +258,8 @@ void process5HzTask() {
 
 		if (compass.isMagDetected) {
 			updateGCSHeading();
-		}
-		else {
+                }
+                else {
 			homeBearing = 0;
 		}
 	}
@@ -338,10 +338,12 @@ void applyServoCommand(int servo, int value) {
 void writeServos() {
 	if (previousServoCommands[verticalServo] != servoCommands[verticalServo]) {
 		VerticalServo.write(servoCommands[verticalServo]);
+                previousServoCommands[verticalServo] = servoCommands[verticalServo];
 	}
 
 	if (previousServoCommands[horizontalServo] != servoCommands[horizontalServo]) {
 		HorizontalServo.write(servoCommands[horizontalServo]);
+                previousServoCommands[horizontalServo] = servoCommands[horizontalServo];
 	}
 }
 

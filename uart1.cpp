@@ -87,6 +87,7 @@ ISR(USART1_RX_vect) {
     uint8_t c;
     // catch the received byte
     c = UDR1;
+
     if (rxd_buffer_locked) return; // if rxd buffer is locked immediately return
     static uint16_t crc;
     static uint8_t ptr_rxd_buffer = 0;
@@ -94,6 +95,7 @@ ISR(USART1_RX_vect) {
     static uint8_t c2 = 0;
     static uint8_t usart_rx_ok = 0;
     uint8_t crc1, crc2;
+    
     // the rxd buffer is unlocked
     if (usart_rx_ok == 0) {
         if ((c2 == '#') && (c1 == 'b' || c1 == 'c') &&

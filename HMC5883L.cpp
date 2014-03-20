@@ -14,11 +14,11 @@ uint8_t readWhoI2C(int deviceAddress) {
 
 HMC5883L::HMC5883L()
 {
+        Wire.begin();
 	m_Scale = 1;
 }
 
 void HMC5883L::CheckConnectionState() {
-
 	if (readWhoI2C(HMC5883L_Address) == COMPASS_IDENTITY)
 		isMagDetected = true;
 	else
@@ -28,11 +28,11 @@ void HMC5883L::CheckConnectionState() {
 MagnetometerRaw HMC5883L::ReadRawAxis()
 {
 	uint8_t* buffer = Read(DataRegisterBegin, 6);
-	free(buffer);
 	MagnetometerRaw raw = MagnetometerRaw();
 	raw.XAxis = (buffer[0] << 8) | buffer[1];
 	raw.ZAxis = (buffer[2] << 8) | buffer[3];
 	raw.YAxis = (buffer[4] << 8) | buffer[5];
+        free(buffer);
 	return raw;
 }
 

@@ -13,27 +13,15 @@ void updateGCSPosition() {
 
 		isHomePositionSet = true;
 	}
-
-	//TODO remove/debug
-	Serial.print("State: "); Serial.print(gpsData.state);
-	Serial.print(" Lat: "); Serial.print(gpsData.lat); Serial.print(" "); Serial.print(homeLatitude, 5);
-	Serial.print(" Lon: "); Serial.print(gpsData.lon); Serial.print(" "); Serial.print(homeLongitude, 5);
-	Serial.print(" Sats: "); Serial.print(gpsData.sats); Serial.println();
 }
 
 void updateGCSHeading() {
 	//Get the reading from the HMC5883L and calculate the heading
 	MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
-	float heading = atan2(scaled.YAxis, scaled.XAxis);
 
-	// Correct for when signs are reversed.
-	if (heading < 0) heading += 2 * PI;
-	if (heading > 2 * PI) heading -= 2 * PI;
-
-	homeBearing = (int)heading * RAD_TO_DEG; //radians to degrees
-
-	//TODO remove/debug
-	//Serial.print(" Head: "); Serial.print(homeBearing); Serial.println();
+        int angle = atan2(-scaled.YAxis , scaled.XAxis) / M_PI * 180; // angle is atan(-y/x)
+        if(angle < 0) angle = angle  + 360;
+        homeBearing = angle;
 }
 
 void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
