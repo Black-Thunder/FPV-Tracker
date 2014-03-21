@@ -14,6 +14,12 @@
 #define verticalServo 0
 #define horizontalServo 1
 
+#define GPSTrackingMode 0
+#define RSSITrackingMode 1
+
+#define AeroQuadProtocol 0
+#define MikrokopterProtocol 1
+
 // Telemetry variables
 extern float        uavLatitude;                // latitude
 extern float        uavLongitude;               // longitude
@@ -58,7 +64,7 @@ extern char verticalDirection;
 extern Servo VerticalServo;
 extern Servo HorizontalServo;
 
-extern char protocolType;						// 0=AeroQuad protocol, 1=Mikrokopter protocol
+extern char protocolType;
 
 extern void applyServoCommand(int servo, int value);
 

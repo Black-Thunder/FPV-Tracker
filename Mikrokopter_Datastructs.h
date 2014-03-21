@@ -24,7 +24,7 @@ typedef struct {
 
 typedef struct {
     u8 Version; // version of the data structure
-    GPS_Pos_t CurrentPosition; // see ubx.h for details
+    GPS_Pos_t CurrentPosition; // see gpspos.h for details
     GPS_Pos_t TargetPosition;
     GPS_PosDev_t TargetPositionDeviation;
     GPS_Pos_t HomePosition;
@@ -37,12 +37,12 @@ typedef struct {
     u16 FlyingTime; // in seconds
     u8 UBat; // Battery Voltage in 0.1 Volts
     u16 GroundSpeed; // speed over ground in cm/s (2D)
-    s16 Heading; // current flight direction in Â° as angle to north
-    s16 CompassHeading; // current compass value in Â°
-    s8 AngleNick; // current Nick angle in 1Â°
-    s8 AngleRoll; // current Rick angle in 1Â°
+    s16 Heading; // current flight direction in ° as angle to north
+    s16 CompassHeading; // current compass value in °
+    s8 AngleNick; // current Nick angle in 1°
+    s8 AngleRoll; // current Rick angle in 1°
     u8 RC_Quality; // RC_Quality
-    u8 FCFlags; // Flags from FC
+    u8 FCStatusFlags; // Flags from FC
     u8 NCFlags; // Flags from NC
     u8 Errorcode; // 0 --> okay
     u8 OperatingRadius; // current operation radius around the Home Position in m

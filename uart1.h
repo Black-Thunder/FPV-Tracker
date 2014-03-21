@@ -9,6 +9,9 @@
 #define RXD_BUFFER_LEN          220
 #define TXD_BUFFER_LEN          20 // not so much needed
 
+#define AEROQUAD_TELEMETRY_MSGSIZE 24
+#define AEROQUAD_TELEMETRY_MSGSIZE_ECC (AEROQUAD_TELEMETRY_MSGSIZE + 8)
+
 #define REQUEST_OSD_DATA "#bo?]==EG\r"
 #define REQUEST_UART_TO_FC "#cu=IfREv\r"
 

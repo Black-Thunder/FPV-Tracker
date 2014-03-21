@@ -24,8 +24,7 @@ char verticalDirection = 0;
 #define NUMBER_OF_SAMPLES 10
 
 // GPS tracking
-char trackingMode = 0; // 1=RSSI-Tracking, 0=GPS-Tracking
-char protocolType = 0;
+char protocolType = AeroQuadProtocol;
 const int protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
 bool lastProtocolTypeSwitchState = LOW;
 
@@ -47,6 +46,7 @@ bool isTelemetryOk = false;
 long lastPacketReceived = 0;
 
 // General
+char trackingMode = GPSTrackingMode;
 const int trackingModeSwitchPin = 9; // Switch to determine tracking mode on start-up; LOW=RSSI, HIGH=GPS
 bool lastTrackingModeSwitchState = LOW;
 
@@ -114,7 +114,7 @@ void setupGPSTrackingMode() {
 	sei();
 
 	//request NC uart from MK, already done by C-OSD/Smart-OSD
-	//if (protocolType == 1) {
+	//if (protocolType == MikrokopterProtocol) {
 	//	usart1_request_nc_uart();
 	//}
 
@@ -143,7 +143,7 @@ void setupHMC5883L(){
 
 void determineTrackingMode() {
 	if (digitalRead(trackingModeSwitchPin) == HIGH) {
-		trackingMode = 1;
+		trackingMode = RSSITrackingMode;
 		lastTrackingModeSwitchState = HIGH;
 
 		lcd.setCursor(0, 0);
@@ -151,7 +151,7 @@ void determineTrackingMode() {
 		delay(1000); // Keep LCD message visible
 	}
 	else {
-		trackingMode = 0;
+		trackingMode = GPSTrackingMode;
 		lastTrackingModeSwitchState = LOW;
 
 		lcd.setCursor(0, 0);
@@ -163,14 +163,14 @@ void determineTrackingMode() {
 
 void determineProtocolType() {
 	if (digitalRead(protocolTypeSwitchPin) == HIGH) {
-		protocolType = 1;
+		protocolType = MikrokopterProtocol;
 		lastProtocolTypeSwitchState = HIGH;
 
 		lcd.setCursor(0, 1);
 		lcd.print("Protocol: MK");
 	}
 	else {
-		protocolType = 0;
+		protocolType = AeroQuadProtocol;
 		lastProtocolTypeSwitchState = LOW;
 
 		lcd.setCursor(0, 1);
@@ -228,7 +228,7 @@ void loop() {
 }
 
 void process100HzTask() {
-	if (trackingMode == 0) {
+	if (trackingMode == GPSTrackingMode) {
 		updateGps();
 	}
 }
@@ -238,9 +238,9 @@ void process50HzTask() {
 }
 
 void process10HzTask() {
-	if (trackingMode == 0) {
+	if (trackingMode == GPSTrackingMode) {
 		// Request data from MK, this is already done by C-OSD/Smart-OSD
-		//if (protocolType == 1) {
+		//if (protocolType == MikrokopterProtocol) {
 		//	requestMikrokopterTelemetryData();
 		//}
 
@@ -254,7 +254,7 @@ void process10HzTask() {
 }
 
 void process5HzTask() {
-	if (trackingMode == 0) {
+	if (trackingMode == GPSTrackingMode) {
 		updateGCSPosition();
 
 		if (compass.isMagDetected) {
@@ -276,7 +276,7 @@ void process1HzTask() {
 void processTracking() {
 	readRSSI();
 
-	if (trackingMode == 1) {
+	if (trackingMode == RSSITrackingMode) {
 		if (rssiTrack <= thresholdValue) {
 			calculateRSSIDiff();
 
@@ -302,7 +302,7 @@ void processTracking() {
 			}
 		}
 	}
-	else if (trackingMode == 0) {
+	else if (trackingMode == GPSTrackingMode) {
 		// Only move servo if home position is set, otherwise standby to last known position
 		if (isHomePositionSet && isTelemetryOk) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
@@ -364,7 +364,7 @@ void checkSwitchState() {
 
 		determineTrackingMode();
 	}
-	if (trackingMode == 0 && digitalRead(protocolTypeSwitchPin) != lastProtocolTypeSwitchState) {
+	if (trackingMode == GPSTrackingMode && digitalRead(protocolTypeSwitchPin) != lastProtocolTypeSwitchState) {
 		lcd.clear();
 
 		determineProtocolType();
@@ -382,11 +382,11 @@ void readRSSI() {
 }
 
 // called at 10Hz
-//void requestMikrokopterTelemetryData() {
-//	usart1_EnableTXD();
-//
-//	// request OSD Data from NC every 100ms
-//	usart1_puts_pgm(PSTR(REQUEST_OSD_DATA));
-//
-//	usart1_DisableTXD();
-//}
+void requestMikrokopterTelemetryData() {
+	usart1_EnableTXD();
+
+	// request OSD Data from NC every 100ms
+	usart1_puts_pgm(REQUEST_OSD_DATA);
+
+	usart1_DisableTXD();
+}
