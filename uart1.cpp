@@ -104,10 +104,10 @@ ISR(USART1_RX_vect) {
 			c2 = 0;
 			c1 = 0;
 		}
-		else if ((protocolType == AeroQuadProtocol) && (c2 == 'A') && (c1 == 'Q')) { // telemetry data from AQ, starts with 'AQ'
+		else if ((protocolType == AeroQuadProtocol) && (c1 == 'A') && (c == 'Q')) { // telemetry data from AQ, starts with 'AQ'
 			usart_rx_ok = 1;
-			rxd_buffer[ptr_rxd_buffer++] = c2;
 			rxd_buffer[ptr_rxd_buffer++] = c1;
+			rxd_buffer[ptr_rxd_buffer++] = c;
 			c2 = 0;
 			c1 = 0;
 		}
