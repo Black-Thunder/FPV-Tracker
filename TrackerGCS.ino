@@ -111,6 +111,7 @@ void setupGPSTrackingMode() {
 
 	usart1_init();
 	usart1_DisableTXD();
+	sei();
 
 	//request NC uart from MK, already done by C-OSD/Smart-OSD
 	//if (protocolType == 1) {

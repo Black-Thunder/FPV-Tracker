@@ -26,12 +26,6 @@ void usart1_init() {
 
     // Enable receiver and transmitter; enable RX interrupt
     UCSR1B |= (1 << RXEN1) | (1 << TXEN1) | (1 << RXCIE1);
-
-	// UART Double Speed (U2X), enable RX interrupt
-	UCSR1A |= (1 << U2X1) | (1 << RXC1) ;
-
-	// Global interrupt flag
-	SREG |= (1 << 7);
 }
 
 /**
@@ -84,7 +78,7 @@ ISR(USART1_TX_vect) {
  * http://svn.mikrokopter.de/mikrowebsvn/filedetails.php?repname=FlightCtrl&path=%2Fbranches%2FV0.72p+Code+Redesign+killagreg%2Fuart0.c
  */
 ISR(USART1_RX_vect) {
-    uint8_t c;
+    char c;
     // catch the received byte
     c = UDR1;
 
