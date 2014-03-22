@@ -175,19 +175,6 @@ void processUsart1Data(void)
 		uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
 		uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
 		uavAltitude = telemetryPacketAeroQuad.altitude / 10;
-
-
-
-		//telemetryPacketAeroQuad.id = (rxd_buffer[0] << 8) | (rxd_buffer[1]);
-		//Serial.print(telemetryPacketAeroQuad.latitude); Serial.print(" ");
-		//Serial.print(rxd_buffer[2]); Serial.print(rxd_buffer[3]); Serial.print(rxd_buffer[4]); Serial.println(rxd_buffer[5]);
-		//Serial.print(telemetryPacketAeroQuad.rssi); Serial.println();
-		//i = 0;
-		//while (i < 24) {
-		//	Serial.print(rxd_buffer[i]);
-		//	i++;
-		//}
-		//Serial.println();
 	}
 	else if (protocolType == MikrokopterProtocol) {
 		if (rxd_buffer[2] == 'O') { // NC OSD Data
