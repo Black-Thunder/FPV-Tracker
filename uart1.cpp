@@ -9,11 +9,11 @@
 #include "TrackerGCS.h"
 #include "rs.h"
 
-volatile uint8_t rxd_buffer_locked = 0;
-volatile uint8_t rxd_buffer[RXD_BUFFER_LEN];
-volatile uint8_t ReceivedBytes = 0;
+volatile bool isRxdBufferLocked = false;
+volatile uint8_t rxdBuffer[RXD_BUFFER_LEN];
+volatile uint8_t receivedBytes = 0;
 volatile uint8_t *pRxData = 0;
-volatile uint8_t RxDataLen = 0;
+volatile uint8_t rxDataLen = 0;
 
 volatile TelemetryPacket_t telemetryPacketAeroQuad;
 volatile NaviData_t telemetryPacketMikrokopter;
@@ -83,31 +83,31 @@ ISR(USART1_RX_vect) {
 	// catch the received byte
 	c = UDR1;
 
-	if (rxd_buffer_locked) return; // if rxd buffer is locked immediately return
+	if (isRxdBufferLocked) return; // if rxd buffer is locked immediately return
 
 	static uint8_t c1 = 0;
 	static uint8_t c2 = 0;
-	static uint8_t usart_rx_ok = 0;
+	static bool isUsartRxOk = false;
 	static uint16_t crc;
-	static uint8_t ptr_rxd_buffer = 0;
+	static uint8_t ptrRxdBuffer = 0;
 	uint8_t crc1, crc2;
 
-	if (usart_rx_ok == 0) {
+	if (!isUsartRxOk) {
 		if ((protocolType == MikrokopterProtocol) && (c2 == '#') && (c1 == 'c') && (c == 'O')) { // OSD data from MK, starts with '#cO'
-			usart_rx_ok = 1;
-			rxd_buffer[ptr_rxd_buffer++] = c2;
+			isUsartRxOk = true;
+			rxdBuffer[ptrRxdBuffer++] = c2;
 			crc = c2;
-			rxd_buffer[ptr_rxd_buffer++] = c1;
+			rxdBuffer[ptrRxdBuffer++] = c1;
 			crc += c1;
-			rxd_buffer[ptr_rxd_buffer++] = c;
+			rxdBuffer[ptrRxdBuffer++] = c;
 			crc += c;
 			c2 = 0;
 			c1 = 0;
 		}
 		else if ((protocolType == AeroQuadProtocol) && (c1 == 'A') && (c == 'Q')) { // telemetry data from AQ, starts with 'AQ'
-			usart_rx_ok = 1;
-			rxd_buffer[ptr_rxd_buffer++] = c1;
-			rxd_buffer[ptr_rxd_buffer++] = c;
+			isUsartRxOk = true;
+			rxdBuffer[ptrRxdBuffer++] = c1;
+			rxdBuffer[ptrRxdBuffer++] = c;
 			c2 = 0;
 			c1 = 0;
 		}
@@ -115,69 +115,79 @@ ISR(USART1_RX_vect) {
 			c2 = c1;
 			c1 = c;
 		}
-	} 
+	}
 	else if (protocolType == AeroQuadProtocol) {
-		if(ptr_rxd_buffer < AEROQUAD_TELEMETRY_MSGSIZE_ECC) {
-			rxd_buffer[ptr_rxd_buffer++] = c; // copy byte to rxd buffer
+		if (ptrRxdBuffer < AEROQUAD_TELEMETRY_MSGSIZE_ECC) {
+			rxdBuffer[ptrRxdBuffer++] = c; // copy byte to rxd buffer
 		}
 		else { // all bytes received
-			ReceivedBytes = ptr_rxd_buffer; // store number of received bytes
-			ptr_rxd_buffer = 0; // reset rxd buffer pointer
-			rxd_buffer_locked = 1; // lock the rxd buffer
-			usart_rx_ok = 0;
+			receivedBytes = ptrRxdBuffer; // store number of received bytes
+			ptrRxdBuffer = 0; // reset rxd buffer pointer
+			isRxdBufferLocked = true; // lock the rxd buffer
+			isUsartRxOk = false;
 		}
 	}
 	else if (protocolType == MikrokopterProtocol) {
-		if (ptr_rxd_buffer < RXD_BUFFER_LEN) { // collect incomming bytes
+		if (ptrRxdBuffer < RXD_BUFFER_LEN) { // collect incomming bytes
 			if (c != '\r') { // no termination character
-				rxd_buffer[ptr_rxd_buffer++] = c; // copy byte to rxd buffer
+				rxdBuffer[ptrRxdBuffer++] = c; // copy byte to rxd buffer
 				crc += c; // update crc
-			} 
+			}
 			else { // termination character was received
 				// the last 2 bytes are no subject for checksum calculation
 				// they are the checksum itself
-				crc -= rxd_buffer[ptr_rxd_buffer - 2];
-				crc -= rxd_buffer[ptr_rxd_buffer - 1];
+				crc -= rxdBuffer[ptrRxdBuffer - 2];
+				crc -= rxdBuffer[ptrRxdBuffer - 1];
 				// calculate checksum from transmitted data
 				crc %= 4096;
 				crc1 = '=' + crc / 64;
 				crc2 = '=' + crc % 64;
 				// compare checksum to transmitted checksum bytes
-				if ((crc1 == rxd_buffer[ptr_rxd_buffer - 2]) && (crc2 == rxd_buffer[ptr_rxd_buffer - 1])) { // checksum valid
-					rxd_buffer[ptr_rxd_buffer] = '\r'; // set termination character
-					ReceivedBytes = ptr_rxd_buffer + 1; // store number of received bytes
-					rxd_buffer_locked = 1; // lock the rxd buffer
+				if ((crc1 == rxdBuffer[ptrRxdBuffer - 2]) && (crc2 == rxdBuffer[ptrRxdBuffer - 1])) { // checksum valid
+					rxdBuffer[ptrRxdBuffer] = '\r'; // set termination character
+					receivedBytes = ptrRxdBuffer + 1; // store number of received bytes
+					isRxdBufferLocked = true; // lock the rxd buffer
 				}
 				else { // checksum invalid
-					rxd_buffer_locked = 0; // unlock rxd buffer
+					isRxdBufferLocked = false; // unlock rxd buffer
 				}
-				ptr_rxd_buffer = 0; // reset rxd buffer pointer
-				usart_rx_ok = 0;
+				ptrRxdBuffer = 0; // reset rxd buffer pointer
+				isUsartRxOk = false;
 			}
 		}
 		else { // rxd buffer overrun
-			ptr_rxd_buffer = 0; // reset rxd buffer
-			rxd_buffer_locked = 0; // unlock rxd buffer
-			usart_rx_ok = 0;
+			ptrRxdBuffer = 0; // reset rxd buffer
+			isRxdBufferLocked = false; // unlock rxd buffer
+			isUsartRxOk = false;
 		}
 	}
 }
 
 void processUsart1Data(void)
 {
-	if (!rxd_buffer_locked) return;
+	if (!isRxdBufferLocked) return;
 
 	if (protocolType == AeroQuadProtocol) {
-		decode_data(rxd_buffer, AEROQUAD_TELEMETRY_MSGSIZE_ECC);
-		memcpy((char*)(&telemetryPacketAeroQuad), (char*)rxd_buffer, sizeof(TelemetryPacket_t));
+		decode_data(rxdBuffer, AEROQUAD_TELEMETRY_MSGSIZE_ECC);
 
-		uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo;
-		uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
-		uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
-		uavAltitude = telemetryPacketAeroQuad.altitude / 10;
+		// Check if data is corrupted and try to correct
+		bool isMessageCorrupted = false;
+
+		if (check_syndrome() != 0) {
+			isMessageCorrupted = correct_errors_erasures(rxdBuffer, AEROQUAD_TELEMETRY_MSGSIZE_ECC, 0, 0);
+		}
+
+		if (!isMessageCorrupted) {
+			memcpy((char*)(&telemetryPacketAeroQuad), (char*)rxdBuffer, sizeof(TelemetryPacket_t));
+
+			uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo;
+			uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
+			uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
+			uavAltitude = telemetryPacketAeroQuad.altitude / 10;
+		}
 	}
 	else if (protocolType == MikrokopterProtocol) {
-		if (rxd_buffer[2] == 'O') { // NC OSD Data
+		if (rxdBuffer[2] == 'O') { // NC OSD Data
 			Decode64();
 			memcpy((char*)(&telemetryPacketMikrokopter), (char*)pRxData, sizeof(NaviData_t));
 
@@ -190,9 +200,9 @@ void processUsart1Data(void)
 
 	lastPacketReceived = millis();
 	isTelemetryOk = true;
-	rxd_buffer_locked = 0;
+	isRxdBufferLocked = false;
 	pRxData = 0;
-	RxDataLen = 0;
+	rxDataLen = 0;
 
 	if (uavSatellitesVisible > 5) uavHasGPSFix = true;
 	else uavHasGPSFix = false;
@@ -208,36 +218,36 @@ void Decode64(void) {
 	uint8_t x, y, z;
 	uint8_t ptrIn = 3;
 	uint8_t ptrOut = 3;
-	uint8_t len = ReceivedBytes - 6;
+	uint8_t len = receivedBytes - 6;
 
 	while (len) {
-		a = rxd_buffer[ptrIn++] - '=';
-		b = rxd_buffer[ptrIn++] - '=';
-		c = rxd_buffer[ptrIn++] - '=';
-		d = rxd_buffer[ptrIn++] - '=';
+		a = rxdBuffer[ptrIn++] - '=';
+		b = rxdBuffer[ptrIn++] - '=';
+		c = rxdBuffer[ptrIn++] - '=';
+		d = rxdBuffer[ptrIn++] - '=';
 
 		x = (a << 2) | (b >> 4);
 		y = ((b & 0x0f) << 4) | (c >> 2);
 		z = ((c & 0x03) << 6) | d;
 
-		if (len--) rxd_buffer[ptrOut++] = x;
+		if (len--) rxdBuffer[ptrOut++] = x;
 		else break;
-		if (len--) rxd_buffer[ptrOut++] = y;
+		if (len--) rxdBuffer[ptrOut++] = y;
 		else break;
-		if (len--) rxd_buffer[ptrOut++] = z;
+		if (len--) rxdBuffer[ptrOut++] = z;
 		else break;
 	}
-	pRxData = &rxd_buffer[3];
-	RxDataLen = ptrOut - 3;
+	pRxData = &rxdBuffer[3];
+	rxDataLen = ptrOut - 3;
 }
 
 /**
 * Request Data through usart1 until a answer is received
 */
 void usart1_request_blocking(unsigned char answer, const char* message) {
-	rxd_buffer[2] = answer + 1; // unvalidate answer
-	while (rxd_buffer[2] != answer || (rxd_buffer_locked != 1)) {
-		rxd_buffer_locked = 0;
+	rxdBuffer[2] = answer + 1; // unvalidate answer
+	while (rxdBuffer[2] != answer || !isRxdBufferLocked) {
+		isRxdBufferLocked = false;
 		usart1_EnableTXD();
 		usart1_puts_pgm(message);
 		usart1_DisableTXD();
@@ -245,7 +255,7 @@ void usart1_request_blocking(unsigned char answer, const char* message) {
 		wait = 0;
 
 		// wait for complete answer
-		while (rxd_buffer_locked == 0 && wait < 200) {
+		while (!isRxdBufferLocked && wait < 200) {
 			wait++;
 			_delay_ms(10);
 		}

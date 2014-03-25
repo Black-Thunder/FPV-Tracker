@@ -6,20 +6,14 @@
 #include <util/delay.h>
 
 #define USART1_BAUD 57600
-#define RXD_BUFFER_LEN          220
-#define TXD_BUFFER_LEN          20 // not so much needed
+#define RXD_BUFFER_LEN 220
+#define TXD_BUFFER_LEN 20 // not so much needed
 
 #define AEROQUAD_TELEMETRY_MSGSIZE 24
-#define AEROQUAD_TELEMETRY_MSGSIZE_ECC (AEROQUAD_TELEMETRY_MSGSIZE + 8)
+#define AEROQUAD_TELEMETRY_MSGSIZE_ECC (AEROQUAD_TELEMETRY_MSGSIZE + NPAR)
 
 #define REQUEST_OSD_DATA "#bo?]==EG\r"
 #define REQUEST_UART_TO_FC "#cu=IfREv\r"
-
-extern volatile uint8_t rxd_buffer_locked;
-extern volatile uint8_t rxd_buffer[RXD_BUFFER_LEN];
-extern volatile uint8_t ReceivedBytes;
-extern volatile uint8_t *pRxData;
-extern volatile uint8_t RxDataLen;
 
 /**
  * init usart1

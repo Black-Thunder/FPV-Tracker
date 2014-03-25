@@ -259,8 +259,8 @@ void process5HzTask() {
 
 		if (compass.isMagDetected) {
 			updateGCSHeading();
-                }
-                else {
+		}
+		else {
 			homeBearing = 0;
 		}
 	}
@@ -339,23 +339,50 @@ void applyServoCommand(int servo, int value) {
 void writeServos() {
 	if (previousServoCommands[verticalServo] != servoCommands[verticalServo]) {
 		VerticalServo.write(servoCommands[verticalServo]);
-                previousServoCommands[verticalServo] = servoCommands[verticalServo];
+		previousServoCommands[verticalServo] = servoCommands[verticalServo];
 	}
 
 	if (previousServoCommands[horizontalServo] != servoCommands[horizontalServo]) {
 		HorizontalServo.write(servoCommands[horizontalServo]);
-                previousServoCommands[horizontalServo] = servoCommands[horizontalServo];
+		previousServoCommands[horizontalServo] = servoCommands[horizontalServo];
 	}
 }
 
 void updateLCD() {
 	lcd.clear();
 	lcd.setCursor(0, 0);
-	lcd.print("RSSI Track ");
-	lcd.print(rssiTrack);
-	lcd.setCursor(0, 1);
-	lcd.print("RSSI Fix   ");
-	lcd.print(rssiFix);
+
+	if (trackingMode == GPSTrackingMode) {
+		if (rssiTrack == 100 && rssiFix == 100) {
+			// Would be a total of 17 chars
+			lcd.print("Track ");
+			lcd.print(rssiTrack);
+			lcd.print("Fix ");
+			lcd.print(rssiFix);
+		}
+		else {
+			lcd.print("Track ");
+			lcd.print(rssiTrack);
+			lcd.print(" Fix ");
+			lcd.print(rssiFix);
+		}
+
+		lcd.setCursor(0, 1);
+
+		if (isTelemetryOk) {
+			lcd.print("Link OK");
+		}
+		else {
+			lcd.print("!! LINK LOST !!");
+		}
+	}
+	else if (trackingMode == RSSITrackingMode) {
+		lcd.print("RSSI Track ");
+		lcd.print(rssiTrack);
+		lcd.setCursor(0, 1);
+		lcd.print("RSSI Fix   ");
+		lcd.print(rssiFix);
+	}
 }
 
 void checkSwitchState() {
