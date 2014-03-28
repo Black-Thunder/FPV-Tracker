@@ -6,6 +6,8 @@
 HMC5883L compass;
 bool isHomePositionSet = false;
 
+const float R = 6371000.0;    //in meters. Earth radius 6371km
+
 void updateGCSPosition() {
 	if (haveAGpsLock()) {
 		homeLatitude = gpsData.lat / 1.0e7f;
@@ -19,9 +21,11 @@ void updateGCSHeading() {
 	//Get the reading from the HMC5883L and calculate the heading
 	MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
 
-        int angle = atan2(-scaled.YAxis , scaled.XAxis) / M_PI * 180; // angle is atan(-y/x)
+        int angle = atan2(scaled.YAxis , scaled.XAxis) / M_PI * 180; // angle is atan(-y/x)
         if(angle < 0) angle = angle  + 360;
         homeBearing = angle;
+        
+        Serial.println(homeBearing);
 }
 
 void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
@@ -74,7 +78,8 @@ void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
 			}
 		}
 	}
-
+        
+        Serial.print(angle_b); Serial.print(" "); Serial.println(angle_a);
 	applyServoCommand(horizontalServo, angle_b);
 	applyServoCommand(verticalServo, angle_a);
 }
@@ -88,6 +93,7 @@ void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, 
 	lon2 = toRad(lon2);
 	lat2 = toRad(lat2);
 
+        //Serial.print(lon1); Serial.print(" "); Serial.print(lat1); Serial.print(" "); Serial.print(lon2); Serial.print(" "); Serial.println(lat2);
 	//calculating bearing in degree decimal
 	trackingBearing = calculateBearing(lon1, lat1, lon2, lat2);
 
@@ -107,9 +113,8 @@ int calculateBearing(float lon1, float lat1, float lon2, float lat2) {
 
 int calculateElevation(float lon1, float lat1, float lon2, float lat2, int alt) {
 	// feeded in radian, output in degrees
-	float a, el, c, d, R, dLat, dLon;
-	//calculating distance between uav & home
-	R = 6371000.0;    //in meters. Earth radius 6371km
+	float a, el, c, d, dLat, dLon;
+	//calculating distance between uav & home	
 	dLat = (lat2 - lat1);
 	dLon = (lon2 - lon1);
 	a = sin(dLat / 2) * sin(dLat / 2) + sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2);

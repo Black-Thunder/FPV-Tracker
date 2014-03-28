@@ -194,7 +194,7 @@ void processUsart1Data(void)
 			uavSatellitesVisible = telemetryPacketMikrokopter.SatsInUse;
 			uavLatitude = telemetryPacketMikrokopter.CurrentPosition.Latitude / 1.0e7f;
 			uavLongitude = telemetryPacketMikrokopter.CurrentPosition.Longitude / 1.0e7f;
-			uavAltitude = telemetryPacketMikrokopter.CurrentPosition.Altitude / 10;
+			uavAltitude = telemetryPacketMikrokopter.Altimeter / 2;
 		}
 	}
 

@@ -107,7 +107,7 @@ void calibrateRSSI() {
 
 void setupGPSTrackingMode() {
 	determineProtocolType();
-	delay(1000); // Keep LCD message visible
+	delay(2000); // Keep LCD message visible
 
 	usart1_init();
 	usart1_DisableTXD();
@@ -118,6 +118,8 @@ void setupGPSTrackingMode() {
 	//	usart1_request_nc_uart();
 	//}
 
+        lcd.setCursor(0, 1);
+        lcd.print("Configuring GPS");
 	initializeGps();
 	setupHMC5883L();
 }
@@ -307,6 +309,7 @@ void processTracking() {
 		if (isHomePositionSet && isTelemetryOk) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
 
+                        //Serial.print(trackingBearing);
 			//set current GPS bearing relative to homeBearing
 			if (trackingBearing >= homeBearing) {
 				trackingBearing -= homeBearing;
@@ -315,8 +318,10 @@ void processTracking() {
 				trackingBearing += 360 - homeBearing;
 			}
 
-			if (uavDistanceToHome > minTrackingDistance) {
-				servoPathfinder(trackingBearing, trackingElevation);
+                        //Serial.print(" "); Serial.println(trackingBearing);
+
+		        if (uavDistanceToHome > minTrackingDistance) {	
+                          servoPathfinder(trackingBearing, trackingElevation);
 			}
 		}
 	}

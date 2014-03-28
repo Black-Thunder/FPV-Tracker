@@ -5,16 +5,6 @@
 #include "GPS_DataType.h"
 
 // UBLOX binary message definitions
-struct ublox_NAV_STATUS { // 01 03 (16)
-  uint32_t iTow;
-  uint8_t  gpsFix;
-  uint8_t  flags;
-  uint8_t  fixStat;
-  uint8_t  flags2;
-  uint32_t ttfx;
-  uint32_t msss;
-};
-
 struct ublox_NAV_POSLLH { // 01 02 (28)
   uint32_t iTow;
   int32_t lon; // 1e-7 degrees
@@ -29,7 +19,7 @@ struct ublox_NAV_SOL { // 01 6 (52)
   uint32_t iTow;
   int32_t  fTow;
   int16_t  week;
-  uint8_t  gspFix;
+  uint8_t  gpsFix;
   uint8_t  flags;
   int32_t  ecefX;
   int32_t  ecefY;
@@ -58,7 +48,6 @@ struct ublox_NAV_VELNED{ // 01 12h (36)
 };
 
 typedef union {
-  struct ublox_NAV_STATUS nav_status;
   struct ublox_NAV_POSLLH nav_posllh;
   struct ublox_NAV_VELNED nav_velned;
   struct ublox_NAV_SOL nav_sol;

@@ -23,7 +23,7 @@
 // Telemetry variables
 extern float        uavLatitude;                // latitude
 extern float        uavLongitude;               // longitude
-extern uint8_t      uavSatellitesVisible;		// number of satelites
+extern uint8_t      uavSatellitesVisible;	// number of satelites
 extern int16_t      uavAltitude;                // altitude (dm)
 
 // Home positioning data

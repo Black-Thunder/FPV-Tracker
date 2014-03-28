@@ -32,7 +32,7 @@ typedef struct {
     u8 WaypointIndex; // index of current waypoints running from 0 to WaypointNumber-1
     u8 WaypointNumber; // number of stored waypoints
     u8 SatsInUse; // number of satellites used for position solution
-    s16 Altimeter; // hight according to air pressure
+    s16 Altimeter; // hight according to air pressure, 1 = 5cm
     s16 Variometer; // climb(+) and sink(-) rate
     u16 FlyingTime; // in seconds
     u8 UBat; // Battery Voltage in 0.1 Volts
