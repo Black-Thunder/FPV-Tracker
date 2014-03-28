@@ -118,8 +118,8 @@ void setupGPSTrackingMode() {
 	//	usart1_request_nc_uart();
 	//}
 
-        lcd.setCursor(0, 1);
-        lcd.print("Configuring GPS");
+	lcd.setCursor(0, 1);
+	lcd.print("Configuring GPS");
 	initializeGps();
 	setupHMC5883L();
 }
@@ -309,7 +309,7 @@ void processTracking() {
 		if (isHomePositionSet && isTelemetryOk) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
 
-                        //Serial.print(trackingBearing);
+
 			//set current GPS bearing relative to homeBearing
 			if (trackingBearing >= homeBearing) {
 				trackingBearing -= homeBearing;
@@ -318,11 +318,15 @@ void processTracking() {
 				trackingBearing += 360 - homeBearing;
 			}
 
-                        //Serial.print(" "); Serial.println(trackingBearing);
+			if(trackingBearing >= 0 && trackingBearing <= 90) trackingBearing += 90;
+			else if(trackingBearing >= 270 && trackingBearing <= 360) trackingBearing -= 270;
+			else if(trackingBearing > 90 && trackingBearing < 180) trackingBearing = horizontalMax;
+			else trackingBearing = horizontalMin;
 
-		        if (uavDistanceToHome > minTrackingDistance) {	
-                          servoPathfinder(trackingBearing, trackingElevation);
-			}
+			Serial.print(trackingBearing); Serial.print(" "); Serial.println(trackingElevation);
+
+			applyServoCommand(horizontalServo, trackingBearing);
+			applyServoCommand(verticalServo, trackingElevation);
 		}
 	}
 }

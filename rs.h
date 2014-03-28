@@ -1,29 +1,29 @@
 /*
- * Reed Solomon Encoder/Decoder
- *
- * Copyright Henry Minsky (hqm@alum.mit.edu) 1991-2009
- *
- * This software library is licensed under terms of the GNU GENERAL
- * PUBLIC LICENSE
- *
- * RSCODE is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * RSCODE is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with Rscode.  If not, see <http://www.gnu.org/licenses/>.
+* Reed Solomon Encoder/Decoder
+*
+* Copyright Henry Minsky (hqm@alum.mit.edu) 1991-2009
+*
+* This software library is licensed under terms of the GNU GENERAL
+* PUBLIC LICENSE
+*
+* RSCODE is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+*
+* RSCODE is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+*
+* You should have received a copy of the GNU General Public License
+* along with Rscode.  If not, see <http://www.gnu.org/licenses/>.
 
- * Commercial licensing is available under a separate license, please
- * contact author for details.
- *
- * Source code is available at http://rscode.sourceforge.net
- */
+* Commercial licensing is available under a separate license, please
+* contact author for details.
+*
+* Source code is available at http://rscode.sourceforge.net
+*/
 
 #include <stdio.h>
 #include <ctype.h>
@@ -104,14 +104,14 @@ byte gmult(byte a, byte b)
 }
 
 /**********************************************************
- * Reed Solomon Decoder
- *
- * Computes the syndrome of a codeword. Puts the results
- * into the synBytes[] array.
- */
+* Reed Solomon Decoder
+*
+* Computes the syndrome of a codeword. Puts the results
+* into the synBytes[] array.
+*/
 
 void
-decode_data(volatile uint8_t data[], int nbytes)
+	decode_data(volatile uint8_t data[], int nbytes)
 {
 	int i, j, sum;
 	for (j = 0; j < NPAR; j++) {
@@ -124,8 +124,8 @@ decode_data(volatile uint8_t data[], int nbytes)
 }
 
 /**********************************************************
- * Error correction
- */
+* Error correction
+*/
 
 /* Check if the syndrome is zero */
 int check_syndrome(void) {

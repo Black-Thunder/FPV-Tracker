@@ -13,7 +13,6 @@ extern bool isHomePositionSet;
 
 void updateGCSPosition();
 void updateGCSHeading();
-void servoPathfinder(int angle_b, int angle_a);
 void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, int alt);
 int calculateBearing(float lon1, float lat1, float lon2, float lat2);
 int calculateElevation(float lon1, float lat1, float lon2, float lat2, int alt);

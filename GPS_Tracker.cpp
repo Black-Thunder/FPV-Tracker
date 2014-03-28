@@ -21,67 +21,9 @@ void updateGCSHeading() {
 	//Get the reading from the HMC5883L and calculate the heading
 	MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
 
-        int angle = atan2(scaled.YAxis , scaled.XAxis) / M_PI * 180; // angle is atan(-y/x)
-        if(angle < 0) angle = angle  + 360;
-        homeBearing = angle;
-        
-        Serial.println(homeBearing);
-}
-
-void servoPathfinder(int angle_b, int angle_a){   // ( bearing, elevation )
-	//find the best way to move pan servo considering 0� reference face toward
-	if (angle_b <= 180) {
-		if (horizontalMax >= angle_b) {
-			if (angle_a <= verticalMin) {
-				// checking if we reach the min tilt limit
-				angle_a = verticalMin;
-			}
-			else if (angle_a > verticalMax) {
-				//shouldn't happend but just in case
-				angle_a = verticalMax;
-			}
-		}
-		else if (horizontalMax < angle_b) {
-			//relevant for 180� tilt config only, in case bearing is superior to pan_maxangle
-			angle_b = 360 - (180 - angle_b);
-			if (angle_b >= 360) {
-				angle_b = angle_b - 360;
-			}
-			// invert pan axis 
-			if (verticalMax >= (180 - angle_a)) {
-				// invert pan & tilt for 180� Pan 180� Tilt config
-				angle_a = 180 - angle_a;
-			}
-			else if (verticalMax < (180 - angle_a)) {
-				// staying at nearest max pos
-				angle_a = verticalMax;
-			}
-		}
-	}
-	else {
-		if (horizontalMin > 360 - angle_b) {
-			//works for all config
-			if (angle_a < verticalMin) {
-				// checking if we reach the min tilt limit
-				angle_a = verticalMin;
-			}
-		}
-		else if (horizontalMin <= 360 - angle_b) {
-			angle_b = angle_b - 180;
-			if (verticalMax >= (180 - angle_a)) {
-				// invert pan & tilt for 180/180 conf
-				angle_a = 180 - angle_a;
-			}
-			else if (verticalMax < (180 - angle_a)) {
-				// staying at nearest max pos
-				angle_a = verticalMax;
-			}
-		}
-	}
-        
-        Serial.print(angle_b); Serial.print(" "); Serial.println(angle_a);
-	applyServoCommand(horizontalServo, angle_b);
-	applyServoCommand(verticalServo, angle_a);
+	int angle = atan2(-scaled.YAxis , scaled.XAxis) / M_PI * 180; // angle is atan(-y/x)
+	if(angle < 0) angle = angle  + 360;
+	homeBearing = angle;
 }
 
 void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, int alt) {
@@ -93,7 +35,7 @@ void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, 
 	lon2 = toRad(lon2);
 	lat2 = toRad(lat2);
 
-        //Serial.print(lon1); Serial.print(" "); Serial.print(lat1); Serial.print(" "); Serial.print(lon2); Serial.print(" "); Serial.println(lat2);
+	//Serial.print(lon1); Serial.print(" "); Serial.print(lat1); Serial.print(" "); Serial.print(lon2); Serial.print(" "); Serial.println(lat2);
 	//calculating bearing in degree decimal
 	trackingBearing = calculateBearing(lon1, lat1, lon2, lat2);
 
@@ -108,6 +50,7 @@ int calculateBearing(float lon1, float lat1, float lon2, float lat2) {
 	a = toDeg(a);
 
 	if (a < 0) a = 360 + a;
+	a = 360-a;
 	return (int)round(a);
 }
 
