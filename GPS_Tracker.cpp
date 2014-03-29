@@ -35,7 +35,6 @@ void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, 
 	lon2 = toRad(lon2);
 	lat2 = toRad(lat2);
 
-	//Serial.print(lon1); Serial.print(" "); Serial.print(lat1); Serial.print(" "); Serial.print(lon2); Serial.print(" "); Serial.println(lat2);
 	//calculating bearing in degree decimal
 	trackingBearing = calculateBearing(lon1, lat1, lon2, lat2);
 
@@ -63,7 +62,7 @@ int calculateElevation(float lon1, float lat1, float lon2, float lat2, int alt) 
 	a = sin(dLat / 2) * sin(dLat / 2) + sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2);
 	c = 2 * asin(sqrt(a));
 	d = (R * c);
-	uavDistanceToHome = d / 10;
+	uavDistanceToHome = d;
 	el = atan((float)alt / (10 * d));// in radian
 	el = toDeg(el); // in degree
 	return (int)round(el);

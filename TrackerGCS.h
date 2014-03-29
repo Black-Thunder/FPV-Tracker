@@ -48,7 +48,7 @@ const int verticalMid = 70;
 const int verticalMax = 120;
 const int horizontalMin = 0;
 const int horizontalMid = 85;
-const int horizontalMax = 110;
+const int horizontalMax = 170;
 const int rssi1 = A0;
 const int rssi2 = A1;
 

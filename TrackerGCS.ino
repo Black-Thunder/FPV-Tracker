@@ -309,7 +309,7 @@ void processTracking() {
 		if (isHomePositionSet && isTelemetryOk) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
 
-
+                        if(uavDistanceToHome > minTrackingDistance) {
 			//set current GPS bearing relative to homeBearing
 			if (trackingBearing >= homeBearing) {
 				trackingBearing -= homeBearing;
@@ -318,21 +318,30 @@ void processTracking() {
 				trackingBearing += 360 - homeBearing;
 			}
 
-			if(trackingBearing >= 0 && trackingBearing <= 90) trackingBearing += 90;
-			else if(trackingBearing >= 270 && trackingBearing <= 360) trackingBearing -= 270;
-			else if(trackingBearing > 90 && trackingBearing < 180) trackingBearing = horizontalMax;
-			else trackingBearing = horizontalMin;
-
-			Serial.print(trackingBearing); Serial.print(" "); Serial.println(trackingElevation);
+			if(trackingBearing >= 0 && trackingBearing <= 90) {
+                                trackingBearing = map(trackingBearing, 90, 0, horizontalMin, horizontalMid);
+                        }
+			else if(trackingBearing >= 270 && trackingBearing <= 360) {
+                                trackingBearing = map(trackingBearing, 360, 270, horizontalMid, horizontalMax);
+                        }
+			else if(trackingBearing > 90 && trackingBearing < 180) {
+                                trackingBearing = horizontalMin;
+                        }
+			else {
+                                trackingBearing = horizontalMax;
+                        }
+                        
+                        trackingElevation = map(trackingElevation, 0, 90, 0, 180);
 
 			applyServoCommand(horizontalServo, trackingBearing);
 			applyServoCommand(verticalServo, trackingElevation);
+                        } 
 		}
 	}
 }
 
 void applyServoCommand(int servo, int value) {
-	if (servo > 1) return;
+	if (servo > horizontalServo) return;
 
 	if (servo == verticalServo) {
 		value = constrain(value, verticalMin, verticalMax);
