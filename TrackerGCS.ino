@@ -62,6 +62,9 @@ int previousServoCommands[2] = { -1, -1 };
 Servo VerticalServo;
 Servo HorizontalServo;
 
+float battVoltage = 0;
+bool isBattLow = false;
+
 // Main loop time variable
 unsigned long frameCounter = 0;
 unsigned long previousTime = 0;
@@ -253,6 +256,8 @@ void process10HzTask() {
 			isTelemetryOk = false;
 		}
 	}
+
+        measureBatteryVoltage();
 }
 
 void process5HzTask() {
@@ -369,9 +374,12 @@ void writeServos() {
 void updateLCD() {
 	lcd.clear();
 	lcd.setCursor(0, 0);
-
-	if (trackingMode == GPSTrackingMode) {
-		if (rssiTrack == 100 && rssiFix == 100) {
+        
+        if(isBattLow) {
+                lcd.print("! LOW VOLTAGE !");
+        }     
+	else if (trackingMode == GPSTrackingMode) {
+          	if (rssiTrack == 100 && rssiFix == 100) {
 			// Would be a total of 17 chars
 			lcd.print("Track ");
 			lcd.print(rssiTrack);
@@ -434,4 +442,12 @@ void requestMikrokopterTelemetryData() {
 	usart1_puts_pgm(REQUEST_OSD_DATA);
 
 	usart1_DisableTXD();
+}
+
+void measureBatteryVoltage() {
+      battVoltage = analogRead(battMonitorPin);
+      battVoltage = (battVoltage / 1024) * BATT_AREF;
+      battVoltage /= (float)BATT_R_LOW / (BATT_R_HIGH + BATT_R_LOW);
+      
+      if (battVoltage < 6.6) isBattLow = true;
 }

@@ -20,6 +20,11 @@
 #define AeroQuadProtocol 0
 #define MikrokopterProtocol 1
 
+#define BATT_AREF         4.75		// V
+#define BATT_R_HIGH       10.0  	// kOhm
+#define BATT_R_LOW        1.498		// kOhm
+const int battMonitorPin = A2;
+
 // Telemetry variables
 extern float        uavLatitude;                // latitude
 extern float        uavLongitude;               // longitude
