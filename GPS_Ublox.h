@@ -56,7 +56,7 @@ typedef union {
 
 enum ubloxState{ WAIT_SYNC1, WAIT_SYNC2, GET_CLASS, GET_ID, GET_LL, GET_LH, GET_DATA, GET_CKA, GET_CKB };
 
-void ubloxInit();
+bool ubloxInit();
 void ubloxParseData();
 int ubloxProcessData(unsigned char data);
 

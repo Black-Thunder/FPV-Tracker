@@ -52,6 +52,28 @@ bool lastTrackingModeSwitchState = LOW;
 
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
+byte okSmiley[8] = {
+	B00000,
+	B10001,
+	B00000,
+	B00100,
+	B00000,
+	B10001,
+	B01110,
+	B00000
+};
+
+byte badSmiley[8] = {
+	B00000,
+	B10001,
+	B00000,
+	B00100,
+	B00000,
+	B01110,
+	B10001,
+	B00000
+};
+
 int rssiTrack = 0;
 int rssiFix = 0;
 int rssiTrackOld = 0;
@@ -76,24 +98,44 @@ unsigned long deltaTime = 0;
 #define TASK_5HZ 20
 #define TASK_1HZ 100
 
+// ================================================================
+// Setup section
+// ================================================================
+
 void setup() {
-	//TODO remove/debug
-	Serial.begin(115200);
-
-	lcd.begin(16, 2);
-
-	determineTrackingMode();
+	lcd.begin(20, 4);
+	lcd.createChar(0, okSmiley);
+	lcd.createChar(1, badSmiley);
 
 	VerticalServo.attach(verticalServoPin);
 	HorizontalServo.attach(horizontalServoPin);
 
+	determineTrackingMode();
 	calibrateRSSI();
 }
 
+void determineTrackingMode() {
+	if (digitalRead(trackingModeSwitchPin) == HIGH) {
+		trackingMode = RSSITrackingMode;
+		lastTrackingModeSwitchState = HIGH;
+
+		lcd.setCursor(0, 0);
+		lcd.print("Mode: RSSI          ");
+	}
+	else {
+		trackingMode = GPSTrackingMode;
+		lastTrackingModeSwitchState = LOW;
+
+		lcd.setCursor(0, 0);
+		lcd.print("Mode: GPS           ");
+
+		setupGPSTrackingMode();
+	}
+}
+
 void calibrateRSSI() {
-	lcd.clear();
-	lcd.setCursor(0, 0);
-	lcd.print("Calibrating...");
+	lcd.setCursor(0, 2);
+	lcd.print("Calibrating RSSI... ");
 
 	for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
 		calibrate1 = calibrate1 + analogRead(rssi1);
@@ -110,7 +152,6 @@ void calibrateRSSI() {
 
 void setupGPSTrackingMode() {
 	determineProtocolType();
-	delay(2000); // Keep LCD message visible
 
 	usart1_init();
 	usart1_DisableTXD();
@@ -121,49 +162,19 @@ void setupGPSTrackingMode() {
 	//	usart1_request_nc_uart();
 	//}
 
-	lcd.setCursor(0, 1);
-	lcd.print("Configuring GPS");
+	lcd.setCursor(0, 2);
+	lcd.print("Configuring GPS...  ");
 	initializeGps();
-	setupHMC5883L();
-}
 
-void setupHMC5883L(){
-	compass = HMC5883L();
-	compass.CheckConnectionState();
-
-	if (compass.isMagDetected) {
-		compass.SetScale(1.3); //Set the scale of the compass.
-		compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
-	}
-	else {
-		lcd.clear();
-		lcd.setCursor(0, 0);
-		lcd.print("Mag Failure!");
-		lcd.setCursor(0, 1);
-		lcd.print("Heading set to 0");
-
+	if (!isGPSConfigured) {
+		lcd.setCursor(0, 2);
+		lcd.print("GPS Failure!        ");
+		lcd.setCursor(0, 3);
+		lcd.print("No home position!   ");
 		delay(2000);  // Keep LCD message visible
 	}
-}
 
-void determineTrackingMode() {
-	if (digitalRead(trackingModeSwitchPin) == HIGH) {
-		trackingMode = RSSITrackingMode;
-		lastTrackingModeSwitchState = HIGH;
-
-		lcd.setCursor(0, 0);
-		lcd.print("Mode: RSSI");
-		delay(1000); // Keep LCD message visible
-	}
-	else {
-		trackingMode = GPSTrackingMode;
-		lastTrackingModeSwitchState = LOW;
-
-		lcd.setCursor(0, 0);
-		lcd.print("Mode: GPS");
-
-		setupGPSTrackingMode();
-	}
+	setupHMC5883L();
 }
 
 void determineProtocolType() {
@@ -172,16 +183,41 @@ void determineProtocolType() {
 		lastProtocolTypeSwitchState = HIGH;
 
 		lcd.setCursor(0, 1);
-		lcd.print("Protocol: MK");
+		lcd.print("Protocol: MK        ");
 	}
 	else {
 		protocolType = AeroQuadProtocol;
 		lastProtocolTypeSwitchState = LOW;
 
 		lcd.setCursor(0, 1);
-		lcd.print("Protocol: AQ");
+		lcd.print("Protocol: AQ        ");
 	}
 }
+
+void setupHMC5883L(){
+	compass = HMC5883L();
+	compass.CheckConnectionState();
+
+	lcd.setCursor(0, 2);
+	lcd.print("Configuring Mag...  ");
+
+	if (compass.isMagDetected) {
+		compass.SetScale(1.3); //Set the scale of the compass.
+		compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
+	}
+	else {
+		lcd.setCursor(0, 2);
+		lcd.print("Mag Failure!        ");
+		lcd.setCursor(0, 3);
+		lcd.print("Heading set to 0    ");
+
+		delay(2000);  // Keep LCD message visible
+	}
+}
+
+// ================================================================
+// Main loop
+// ================================================================
 
 void loop() {
 	currentTime = micros();
@@ -191,6 +227,8 @@ void loop() {
 	// 100Hz task loop
 	// ================================================================
 	if (deltaTime >= 10000) {
+		frameCounter++;
+
 		process100HzTask();
 
 		// ================================================================
@@ -199,8 +237,6 @@ void loop() {
 		if (frameCounter % TASK_50HZ == 0) { // 50 Hz tasks
 			process50HzTask();
 		}
-
-		frameCounter++;
 
 		// ================================================================
 		// 10Hz task loop
@@ -256,33 +292,30 @@ void process10HzTask() {
 			isTelemetryOk = false;
 		}
 	}
-
-        measureBatteryVoltage();
 }
 
 void process5HzTask() {
 	if (trackingMode == GPSTrackingMode) {
-		updateGCSPosition();
+		if (isGPSConfigured) {
+			updateGCSPosition();
+		}
 
 		if (compass.isMagDetected) {
 			updateGCSHeading();
 		}
-		else {
-			homeBearing = 0;
-		}
 	}
 
+	readRSSI();
 	processTracking();
 }
 
 void process1HzTask() {
+	measureBatteryVoltage();
 	updateLCD();
 	checkSwitchState();
 }
 
 void processTracking() {
-	readRSSI();
-
 	if (trackingMode == RSSITrackingMode) {
 		if (rssiTrack <= thresholdValue) {
 			calculateRSSIDiff();
@@ -310,37 +343,42 @@ void processTracking() {
 		}
 	}
 	else if (trackingMode == GPSTrackingMode) {
-		// Only move servo if home position is set, otherwise standby to last known position
-		if (isHomePositionSet && isTelemetryOk) {
+		// Only move servo if home position is set, data link is OK and UAV has GPS fix, otherwise standby to last known position
+		if (isHomePositionSet && isTelemetryOk && uavHasGPSFix) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
 
-                        if(uavDistanceToHome > minTrackingDistance) {
-			//set current GPS bearing relative to homeBearing
-			if (trackingBearing >= homeBearing) {
-				trackingBearing -= homeBearing;
-			}
-			else {
-				trackingBearing += 360 - homeBearing;
-			}
+			if (uavDistanceToHome > minTrackingDistance) {
+				// Set current GPS bearing relative to homeBearing
+				if (trackingBearing >= homeBearing) {
+					trackingBearing -= homeBearing;
+				}
+				else {
+					trackingBearing += 360 - homeBearing;
+				}
 
-			if(trackingBearing >= 0 && trackingBearing <= 90) {
-                                trackingBearing = map(trackingBearing, 90, 0, horizontalMin, horizontalMid);
-                        }
-			else if(trackingBearing >= 270 && trackingBearing <= 360) {
-                                trackingBearing = map(trackingBearing, 360, 270, horizontalMid, horizontalMax);
-                        }
-			else if(trackingBearing > 90 && trackingBearing < 180) {
-                                trackingBearing = horizontalMin;
-                        }
-			else {
-                                trackingBearing = horizontalMax;
-                        }
-                        
-                        trackingElevation = map(trackingElevation, 0, 90, 0, 180);
+				/* Map tracking variables to servo range
+				* trackingBearing: 0 = North, 90 = West, 180 = South, 270 = East
+				* trackingElevation: 0 = parallel to ground, 90 = straight up into the sky
+				* Servo angle: 0 = Maximum left/down, 90 = Mid, 180 = Maximum right/up
+				*/
+				if (trackingBearing >= 0 && trackingBearing <= 90) {
+					trackingBearing = map(trackingBearing, 90, 0, horizontalMin, horizontalMid);
+				}
+				else if (trackingBearing >= 270 && trackingBearing <= 360) {
+					trackingBearing = map(trackingBearing, 360, 270, horizontalMid, horizontalMax);
+				}
+				else if (trackingBearing > 90 && trackingBearing < 180) {
+					trackingBearing = horizontalMin;
+				}
+				else {
+					trackingBearing = horizontalMax;
+				}
 
-			applyServoCommand(horizontalServo, trackingBearing);
-			applyServoCommand(verticalServo, trackingElevation);
-                        } 
+				trackingElevation = map(trackingElevation, 0, 90, 0, 180);
+
+				applyServoCommand(horizontalServo, trackingBearing);
+				applyServoCommand(verticalServo, trackingElevation);
+			}
 		}
 	}
 }
@@ -374,41 +412,34 @@ void writeServos() {
 void updateLCD() {
 	lcd.clear();
 	lcd.setCursor(0, 0);
-        
-        if(isBattLow) {
-                lcd.print("! LOW VOLTAGE !");
-        }     
-	else if (trackingMode == GPSTrackingMode) {
-          	if (rssiTrack == 100 && rssiFix == 100) {
-			// Would be a total of 17 chars
-			lcd.print("Track ");
-			lcd.print(rssiTrack);
-			lcd.print("Fix ");
-			lcd.print(rssiFix);
-		}
-		else {
-			lcd.print("Track ");
-			lcd.print(rssiTrack);
-			lcd.print(" Fix ");
-			lcd.print(rssiFix);
-		}
+	lcd.print("RSSI Track ");
+	lcd.print(rssiTrack);
+	lcd.setCursor(0, 1);
+	lcd.print("RSSI Fix   ");
+	lcd.print(rssiFix);
 
-		lcd.setCursor(0, 1);
+	if (trackingMode == GPSTrackingMode) {
+		lcd.setCursor(0, 2);
 
 		if (isTelemetryOk) {
-			lcd.print("Link OK");
+			lcd.print("Link OK ");
+			lcd.write(byte(0));
 		}
 		else {
-			lcd.print("!! LINK LOST !!");
+			lcd.print("!! LINK LOST !! ");
+			lcd.write(1);
 		}
 	}
-	else if (trackingMode == RSSITrackingMode) {
-		lcd.print("RSSI Track ");
-		lcd.print(rssiTrack);
-		lcd.setCursor(0, 1);
-		lcd.print("RSSI Fix   ");
-		lcd.print(rssiFix);
+
+	lcd.setCursor(0, 3);
+	lcd.print("Voltage: ");
+	lcd.print(battVoltage);
+	lcd.print("V");
+
+	if (isBattLow) {
+		lcd.print(" LOW !!");
 	}
+
 }
 
 void checkSwitchState() {
@@ -434,7 +465,6 @@ void readRSSI() {
 	rssiFix = constrain(rssiFix, 0, 100);
 }
 
-// called at 10Hz
 void requestMikrokopterTelemetryData() {
 	usart1_EnableTXD();
 
@@ -445,9 +475,10 @@ void requestMikrokopterTelemetryData() {
 }
 
 void measureBatteryVoltage() {
-      battVoltage = analogRead(battMonitorPin);
-      battVoltage = (battVoltage / 1024) * BATT_AREF;
-      battVoltage /= (float)BATT_R_LOW / (BATT_R_HIGH + BATT_R_LOW);
-      
-      if (battVoltage < 6.6) isBattLow = true;
+	battVoltage = analogRead(battMonitorPin);
+	battVoltage = (battVoltage / 1024) * BATT_AREF;
+	battVoltage /= (float)BATT_R_LOW / (BATT_R_HIGH + BATT_R_LOW);
+
+	if (battVoltage < 6.6) isBattLow = true;
+	else isBattLow = false;
 }

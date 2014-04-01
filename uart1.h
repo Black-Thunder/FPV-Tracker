@@ -58,11 +58,6 @@ void processUsart1Data();
 void Decode64(void);
 
 /**
- * Request Data through usart1 until a answer is received
- */
-void usart1_request_blocking(unsigned char answer, const char* message);
-
-/**
  * Request UART Redirect from NC to itself
  */
 void usart1_request_nc_uart(void);

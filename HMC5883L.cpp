@@ -14,7 +14,7 @@ uint8_t readWhoI2C(int deviceAddress) {
 
 HMC5883L::HMC5883L()
 {
-        Wire.begin();
+	Wire.begin();
 	m_Scale = 1;
 }
 
@@ -32,7 +32,7 @@ MagnetometerRaw HMC5883L::ReadRawAxis()
 	raw.XAxis = (buffer[0] << 8) | buffer[1];
 	raw.ZAxis = (buffer[2] << 8) | buffer[3];
 	raw.YAxis = (buffer[4] << 8) | buffer[5];
-        free(buffer);
+	free(buffer);
 	return raw;
 }
 

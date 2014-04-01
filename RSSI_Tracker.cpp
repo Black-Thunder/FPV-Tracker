@@ -4,10 +4,10 @@
 int rssiDiv = 0;
 
 void calculateRSSIDiff() {
-	rssiDiv = (rssiTrack - rssiTrackOld);
+	rssiDiv = rssiTrack - rssiTrackOld;
 
 	if (rssiDiv < 0) {
-		rssiDiv = rssiDiv * -1;
+		rssiDiv *= -1;
 	}
 }
 
@@ -33,18 +33,14 @@ void trackHorizontal() {
 		}
 	}
 
-	applyServoCommand(horizontalServo, i);
-
 	if (i <= horizontalMin || i >= horizontalMax) {
-		lcd.clear();
-		lcd.setCursor(0, 0);
-		lcd.print("Reset");
-
 		i = horizontalMid;
 		applyServoCommand(horizontalServo, horizontalMid);
 		applyServoCommand(verticalServo, verticalMid);
 		return;
 	}
+
+	applyServoCommand(horizontalServo, i);
 }
 
 void trackVertical() {
@@ -70,14 +66,12 @@ void trackVertical() {
 		}
 	}
 
-	applyServoCommand(verticalServo, y);
-
 	if (y <= verticalMin || y >= verticalMax) {
-		lcd.clear();
-		lcd.setCursor(0, 0);
-		lcd.print("Reset");
-
 		y = verticalMid;
+		applyServoCommand(horizontalServo, horizontalMid);
+		applyServoCommand(verticalServo, verticalMid);
 		return;
 	}
+
+	applyServoCommand(verticalServo, y);
 }

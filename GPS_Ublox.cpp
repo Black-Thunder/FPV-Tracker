@@ -13,7 +13,7 @@ unsigned char  ubloxCKA, ubloxCKB;
 
 void calcChecksum(uint8_t *checksumPayload, uint8_t payloadSize) {
 	uint8_t CK_A = 0, CK_B = 0;
-	for (int i = 0; i < payloadSize ;i++) {
+	for (int i = 0; i < payloadSize; i++) {
 		CK_A = CK_A + *checksumPayload;
 		CK_B = CK_B + CK_A;
 		checksumPayload++;
@@ -24,7 +24,7 @@ void calcChecksum(uint8_t *checksumPayload, uint8_t payloadSize) {
 }
 
 void sendUBX(uint8_t *UBXmsg, uint8_t msgLength) {
-	for(int i = 0; i < msgLength; i++) {
+	for (int i = 0; i < msgLength; i++) {
 		GPS_SERIAL.write(UBXmsg[i]);
 		GPS_SERIAL.flush();
 	}
@@ -36,7 +36,7 @@ uint8_t getUBX_ACK(uint8_t *msgID) {
 	uint8_t CK_A = 0, CK_B = 0;
 	uint8_t incoming_char;
 	unsigned long ackWait = millis();
-	uint8_t ackPacket[10] = {0xB5, 0x62, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+	uint8_t ackPacket[10] = { 0xB5, 0x62, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 	int i = 0;
 	while (1) {
 		if (GPS_SERIAL.available()) {
@@ -51,99 +51,109 @@ uint8_t getUBX_ACK(uint8_t *msgID) {
 		}
 		if (i > 9) break;
 		if ((millis() - ackWait) > 1500) {
-			Serial.println("ACK Timeout");
 			return 5;
 		}
 		if (i == 4 && ackPacket[3] == 0x00) {
-			Serial.println("NAK Received");
 			return 1;
 		}
 	}
 
-	for (i = 2; i < 8 ;i++) {
+	for (i = 2; i < 8; i++) {
 		CK_A = CK_A + ackPacket[i];
 		CK_B = CK_B + CK_A;
 	}
 	if (msgID[0] == ackPacket[6] && msgID[1] == ackPacket[7] && CK_A == ackPacket[8] && CK_B == ackPacket[9]) {
-		Serial.println("Success!");
-		Serial.print("ACK Received! ");
 		return 10;
 	}
 	else {
-		Serial.print("ACK Checksum Failure: ");
 		delay(1000);
 		return 1;
 	}
 }
 
-void configureUbloxGPS() {
+bool configureUbloxGPS() {
 	uint8_t gpsSetSuccess = 0;
+	int retryCounter = 0;
 
 	//UART1, 9600 baud, out: UBX, in: UBX+NMEA+RTCM
-	uint8_t setPORTMsg[] = {0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x80, 0x25, 0x00, 0x00, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	calcChecksum(&setPORTMsg[2], sizeof(setPORTMsg) - 4);
+	uint8_t setPORTMsg[] = { 0xB5, 0x62, 0x06, 0x00, 0x14, 0x00, 0x01, 0x00, 0x00, 0x00, 0xD0, 0x08, 0x00, 0x00, 0x80, 0x25, 0x00, 0x00, 0x07, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	calcChecksum(&setPORTMsg[2], sizeof(setPORTMsg)-4);
 
 	//2Hz update rate
-	uint8_t setRATEMsg[] = {0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xF4, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00};
-	calcChecksum(&setRATEMsg[2], sizeof(setRATEMsg) - 4);
+	uint8_t setRATEMsg[] = { 0xB5, 0x62, 0x06, 0x08, 0x06, 0x00, 0xF4, 0x01, 0x01, 0x00, 0x01, 0x00, 0x00, 0x00 };
+	calcChecksum(&setRATEMsg[2], sizeof(setRATEMsg)-4);
 
 	//Disable NAV-STATUS msg
-	uint8_t disableNavStatusMsg[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	calcChecksum(&disableNavStatusMsg[2], sizeof(disableNavStatusMsg) - 4);
+	uint8_t disableNavStatusMsg[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	calcChecksum(&disableNavStatusMsg[2], sizeof(disableNavStatusMsg)-4);
 
 	//Enable NAV-SOL msg
-	uint8_t enableNavSOLMsg[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	calcChecksum(&enableNavSOLMsg[2], sizeof(enableNavSOLMsg) - 4);
+	uint8_t enableNavSOLMsg[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x06, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	calcChecksum(&enableNavSOLMsg[2], sizeof(enableNavSOLMsg)-4);
 
 	//Enable NAV-POSLLH msg
-	uint8_t enableNavPOSLLHMsg[] = {0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	calcChecksum(&enableNavPOSLLHMsg[2], sizeof(enableNavPOSLLHMsg) - 4);
+	uint8_t enableNavPOSLLHMsg[] = { 0xB5, 0x62, 0x06, 0x01, 0x08, 0x00, 0x01, 0x02, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	calcChecksum(&enableNavPOSLLHMsg[2], sizeof(enableNavPOSLLHMsg)-4);
 
 	//Stationary mode, fix mode: auto
-	uint8_t setNAV5Msg[] = {0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00,
-		0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-	calcChecksum(&setNAV5Msg[2], sizeof(setNAV5Msg) - 4);
+	uint8_t setNAV5Msg[] = { 0xB5, 0x62, 0x06, 0x24, 0x24, 0x00, 0xFF, 0xFF, 0x02, 0x03, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00,
+		0x00, 0x05, 0x00, 0xFA, 0x00, 0xFA, 0x00, 0x64, 0x00, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x00, 0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+	calcChecksum(&setNAV5Msg[2], sizeof(setNAV5Msg)-4);
 
-	while(gpsSetSuccess != 10) {
+	while (gpsSetSuccess != 10 && retryCounter < 3) {
 		sendUBX(setPORTMsg, sizeof(setPORTMsg));
 		gpsSetSuccess = getUBX_ACK(&setPORTMsg[2]);
+		retryCounter++;
 	}
+	if (retryCounter == 3) return false;
 	gpsSetSuccess = 0;
+	retryCounter = 0;
 
-	while(gpsSetSuccess != 10) {
+	while (gpsSetSuccess != 10 && retryCounter < 3) {
 		sendUBX(setRATEMsg, sizeof(setRATEMsg));
 		gpsSetSuccess = getUBX_ACK(&setRATEMsg[2]);
 	}
+	if (retryCounter == 3) return false;
 	gpsSetSuccess = 0;
+	retryCounter = 0;
 
-	while(gpsSetSuccess != 10) {
+	while (gpsSetSuccess != 10 && retryCounter < 3) {
 		sendUBX(disableNavStatusMsg, sizeof(disableNavStatusMsg));
 		gpsSetSuccess = getUBX_ACK(&disableNavStatusMsg[2]);
 	}
-	gpsSetSuccess = 0;    
+	if (retryCounter == 3) return false;
+	gpsSetSuccess = 0;
+	retryCounter = 0;
 
-	while(gpsSetSuccess != 10) {
+	while (gpsSetSuccess != 10 && retryCounter < 3) {
 		sendUBX(enableNavSOLMsg, sizeof(enableNavSOLMsg));
 		gpsSetSuccess = getUBX_ACK(&enableNavSOLMsg[2]);
 	}
+	if (retryCounter == 3) return false;
 	gpsSetSuccess = 0;
+	retryCounter = 0;
 
-	while(gpsSetSuccess != 10) {
+	while (gpsSetSuccess != 10 && retryCounter < 3) {
 		sendUBX(enableNavPOSLLHMsg, sizeof(enableNavPOSLLHMsg));
 		gpsSetSuccess = getUBX_ACK(&enableNavPOSLLHMsg[2]);
 	}
+	if (retryCounter == 3) return false;
 	gpsSetSuccess = 0;
+	retryCounter = 0;
 
-	while(gpsSetSuccess != 10) {
+	while (gpsSetSuccess != 10 && retryCounter < 3) {
 		sendUBX(setNAV5Msg, sizeof(setNAV5Msg));
 		gpsSetSuccess = getUBX_ACK(&setNAV5Msg[2]);
 	}
+	if (retryCounter == 3) return false;
+
+	return true;
 }
 
 // Initialize parser
-void ubloxInit() {
-	configureUbloxGPS();
+bool ubloxInit() {
 	ubloxProcessDataState = WAIT_SYNC1;
+	return configureUbloxGPS();
 }
 
 // process complete binary packet

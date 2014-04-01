@@ -6,6 +6,8 @@ GeodeticPosition currentPosition;
 
 struct gpsData gpsData;
 
+bool isGPSConfigured = false;
+
 void initializeGpsData() {
 	gpsData.lat = GPS_INVALID_ANGLE;
 	gpsData.lon = GPS_INVALID_ANGLE;
@@ -23,7 +25,7 @@ void initializeGpsData() {
 // Initialize GPS subsystem (called once after powerup)
 void initializeGps() {
 	GPS_SERIAL.begin(9600);
-	ubloxInit();
+	isGPSConfigured = ubloxInit();
 	initializeGpsData();
 }
 

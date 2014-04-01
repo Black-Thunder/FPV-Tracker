@@ -15,6 +15,8 @@
 
 extern struct gpsData gpsData;
 
+extern bool isGPSConfigured;
+
 void initializeGpsData();
 void initializeGps();
 void updateGps();
