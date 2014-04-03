@@ -20,9 +20,9 @@
 #define AeroQuadProtocol 0
 #define MikrokopterProtocol 1
 
-#define BATT_AREF         4.75					// V
-#define BATT_R_HIGH       10.0  				// kOhm
-#define BATT_R_LOW        1.498					// kOhm
+#define BATT_AREF         4.35					// V
+#define BATT_R_HIGH       10.1  				// kOhm
+#define BATT_R_LOW        1.48					// kOhm
 const int battMonitorPin = A2;
 
 // Telemetry variables
@@ -52,8 +52,8 @@ const int verticalMin = 20;
 const int verticalMid = 70;
 const int verticalMax = 120;
 const int horizontalMin = 0;
-const int horizontalMid = 85;
-const int horizontalMax = 170;
+const int horizontalMid = 90;
+const int horizontalMax = 180;
 const int rssi1 = A0;
 const int rssi2 = A1;
 

@@ -476,8 +476,8 @@ void requestMikrokopterTelemetryData() {
 
 void measureBatteryVoltage() {
 	battVoltage = analogRead(battMonitorPin);
-	battVoltage = (battVoltage / 1024) * BATT_AREF;
-	battVoltage /= (float)BATT_R_LOW / (BATT_R_HIGH + BATT_R_LOW);
+	battVoltage = (battVoltage * BATT_AREF) / 1024.0;
+	battVoltage /= (BATT_R_LOW/(BATT_R_HIGH+BATT_R_LOW));  
 
 	if (battVoltage < 6.6) isBattLow = true;
 	else isBattLow = false;
