@@ -14,6 +14,9 @@
 
 #define REQUEST_OSD_DATA "#bo?]==EG\r"
 #define REQUEST_UART_TO_FC "#cu=IfREv\r"
+#define REQUEST_NC_VERSION "#bv====Dl\r"
+
+extern volatile uint8_t *pRxData;
 
 /**
  * init usart1
@@ -56,6 +59,11 @@ void processUsart1Data();
  * http://svn.mikrokopter.de/mikrowebsvn/filedetails.php?repname=FlightCtrl&path=%2Ftags%2FV0.72p%2Fuart.c
  */
 void Decode64(void);
+
+/**
+* Request Data through usart1 until a answer is received
+*/
+void usart1_request_blocking(unsigned char answer, const char* message);
 
 /**
  * Request UART Redirect from NC to itself

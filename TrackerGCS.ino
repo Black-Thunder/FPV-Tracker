@@ -10,44 +10,50 @@
 #include "AeroQuad_Datastructs.h"
 
 // RSSI tracking
-const int horizontalTolerance = 2;
-const int thresholdValue = 80;
+const unsigned char horizontalTolerance = 2;
+const unsigned char thresholdValue = 80;
+
+const unsigned char memorySize = 15;
+const unsigned char rssiIndex = 0;
+const unsigned char verticalIndex = 1;
+const unsigned char horizontalIndex = 2;
+unsigned char rssiTrackingVariablesMemory[memorySize][horizontalIndex + 1];
+unsigned char rssiTrackingCounter = 0;
+bool isRSSITrackingStopped = false;
 
 int calibrate1 = 0;
 int calibrate2 = 0;
-int i = horizontalMid;
-int y = verticalMid;
+unsigned char i = horizontalMid;
+unsigned char y = verticalMid;
 
-char horizontalDirection = 0;
-char verticalDirection = 0;
-
-#define NUMBER_OF_SAMPLES 10
+unsigned char horizontalDirection = 0;
+unsigned char verticalDirection = 0;
 
 // GPS tracking
-char protocolType = AeroQuadProtocol;
-const int protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
+unsigned char protocolType = AeroQuadProtocol;
+const unsigned char protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
 bool lastProtocolTypeSwitchState = LOW;
 
 float uavLatitude = invalidPositionCoordinate;
 float uavLongitude = invalidPositionCoordinate;
-uint8_t uavSatellitesVisible = 0;
+unsigned char uavSatellitesVisible = 0;
 int16_t uavAltitude = invalidAltitude;
 
 float homeLongitude = invalidPositionCoordinate;
 float homeLatitude = invalidPositionCoordinate;
 float uavDistanceToHome = 0;
-int homeBearing = 0;
+unsigned char homeBearing = 0;
 
-int trackingBearing = 0;
-int trackingElevation = 0;
+unsigned char trackingBearing = 0;
+unsigned char trackingElevation = 0;
 
 bool uavHasGPSFix = false;
 bool isTelemetryOk = false;
 long lastPacketReceived = 0;
 
 // General
-char trackingMode = GPSTrackingMode;
-const int trackingModeSwitchPin = 9; // Switch to determine tracking mode on start-up; LOW=RSSI, HIGH=GPS
+unsigned char trackingMode = GPSTrackingMode;
+const unsigned char trackingModeSwitchPin = 9; // Switch to determine tracking mode on start-up; LOW=RSSI, HIGH=GPS
 bool lastTrackingModeSwitchState = LOW;
 
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
@@ -74,12 +80,12 @@ byte badSmiley[8] = {
 	B00000
 };
 
-int rssiTrack = 0;
-int rssiFix = 0;
-int rssiTrackOld = 0;
+unsigned char rssiTrack = 0;
+unsigned char rssiFix = 0;
+unsigned char rssiTrackOld = 0;
 
-int servoCommands[2] = { verticalMid, horizontalMid };
-int previousServoCommands[2] = { -1, -1 };
+unsigned char servoCommands[2] = { verticalMid, horizontalMid };
+unsigned char previousServoCommands[2] = { -1, -1 };
 
 Servo VerticalServo;
 Servo HorizontalServo;
@@ -88,7 +94,7 @@ float battVoltage = 0;
 bool isBattLow = false;
 
 // Main loop time variable
-unsigned long frameCounter = 0;
+unsigned char frameCounter = 0;
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
 unsigned long deltaTime = 0;
@@ -137,17 +143,17 @@ void calibrateRSSI() {
 	lcd.setCursor(0, 2);
 	lcd.print("Calibrating RSSI... ");
 
-	for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
+	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
 		calibrate1 = calibrate1 + analogRead(rssi1);
 		delay(50);
 	}
-	calibrate1 = calibrate1 / NUMBER_OF_SAMPLES;
+	calibrate1 = calibrate1 / numberOfRSSISamples;
 
-	for (int counter = 0; counter < NUMBER_OF_SAMPLES; counter++) {
+	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
 		calibrate2 = calibrate2 + analogRead(rssi2);
 		delay(50);
 	}
-	calibrate2 = calibrate2 / NUMBER_OF_SAMPLES;
+	calibrate2 = calibrate2 / numberOfRSSISamples;
 }
 
 void setupGPSTrackingMode() {
@@ -157,10 +163,7 @@ void setupGPSTrackingMode() {
 	usart1_DisableTXD();
 	sei();
 
-	//request NC uart from MK, already done by C-OSD/Smart-OSD
-	//if (protocolType == MikrokopterProtocol) {
-	//	usart1_request_nc_uart();
-	//}
+	setupUAVCommunication();
 
 	lcd.setCursor(0, 2);
 	lcd.print("Configuring GPS...  ");
@@ -191,6 +194,26 @@ void determineProtocolType() {
 
 		lcd.setCursor(0, 1);
 		lcd.print("Protocol: AQ        ");
+	}
+}
+
+void setupUAVCommunication() {
+	if (protocolType == MikrokopterProtocol) {
+		// request NC uart from MK, already done by C-OSD/Smart-OSD
+		//usart1_request_nc_uart();
+
+		// request version from board
+		usart1_request_nc_uart();
+		_delay_ms(200);
+		usart1_request_nc_uart();
+
+		usart1_request_blocking('V', REQUEST_NC_VERSION);
+
+		str_VersionInfo VersionInfo;
+		memcpy((char*)(&VersionInfo), (char*)pRxData, sizeof(str_VersionInfo));
+
+		lcd.setCursor(0, 3);
+		lcd.print("Firmware "); lcd.print(VersionInfo.SWMajor); lcd.print(".0"); lcd.print(VersionInfo.SWMinor); lcd.print('a' + VersionInfo.SWPatch);
 	}
 }
 
@@ -317,7 +340,23 @@ void process1HzTask() {
 
 void processTracking() {
 	if (trackingMode == RSSITrackingMode) {
-		if (rssiTrack <= thresholdValue) {
+		if (!isRSSITrackingStopped && rssiTrackingCounter >= memorySize) {
+			// Find highest RSSI value within the past 5 seconds and move servos to the corresponding position
+			unsigned char maxValueIndex = 0;
+			unsigned char maxValue = 0;
+
+			for (unsigned char i = 0; i < memorySize; i++) {
+				if (rssiTrackingVariablesMemory[i][rssiIndex] > maxValue) {
+					maxValue = rssiTrackingVariablesMemory[i][rssiIndex];
+					maxValueIndex = i;
+				}
+			}
+
+			applyServoCommand(verticalServo, rssiTrackingVariablesMemory[maxValueIndex][verticalIndex]);
+			applyServoCommand(horizontalServo, rssiTrackingVariablesMemory[maxValueIndex][horizontalIndex]);
+			isRSSITrackingStopped = true;
+		}
+		else if (!isRSSITrackingStopped && rssiTrack <= thresholdValue) {
 			calculateRSSIDiff();
 
 			if (rssiDiv <= horizontalTolerance) {
@@ -340,6 +379,17 @@ void processTracking() {
 			else {
 				trackHorizontal();
 			}
+
+			// Store current RSSI value and the corresponding servo positions
+			rssiTrackingVariablesMemory[rssiTrackingCounter][rssiIndex] = rssiTrack;
+			rssiTrackingVariablesMemory[rssiTrackingCounter][verticalIndex] = servoCommands[verticalServo];
+			rssiTrackingVariablesMemory[rssiTrackingCounter][horizontalIndex] = servoCommands[horizontalServo];
+			rssiTrackingCounter++;
+		}
+		else if (rssiTrack > thresholdValue) {
+			// Reset rssiTrackingCounter and start tracking
+			rssiTrackingCounter = 0;
+			isRSSITrackingStopped = false;
 		}
 	}
 	else if (trackingMode == GPSTrackingMode) {
@@ -476,8 +526,8 @@ void requestMikrokopterTelemetryData() {
 
 void measureBatteryVoltage() {
 	battVoltage = analogRead(battMonitorPin);
-	battVoltage = (battVoltage * BATT_AREF) / 1024.0;
-	battVoltage /= (BATT_R_LOW/(BATT_R_HIGH+BATT_R_LOW));  
+	battVoltage = (battVoltage * battAREFValue) / 1024.0;
+	battVoltage /= (battResistorLow / (battResistorHigh + battResistorLow));
 
 	if (battVoltage < 6.6) isBattLow = true;
 	else isBattLow = false;

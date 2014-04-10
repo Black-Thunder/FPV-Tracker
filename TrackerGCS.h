@@ -5,6 +5,8 @@
 #include <Servo.h>
 #include <pins_arduino.h>
 
+#define numberOfRSSISamples 10
+
 #define minTrackingDistance 5					// Minimum distance in meters before tracking will start
 #define invalidPositionCoordinate 0x7FFFFFFF
 #define invalidAltitude 65535
@@ -20,22 +22,22 @@
 #define AeroQuadProtocol 0
 #define MikrokopterProtocol 1
 
-#define BATT_AREF         4.35					// V
-#define BATT_R_HIGH       10.1  				// kOhm
-#define BATT_R_LOW        1.48					// kOhm
+#define battAREFValue         4.35					// V
+#define battResistorHigh       10.1  				// kOhm
+#define battResistorLow        1.48					// kOhm
 const int battMonitorPin = A2;
 
 // Telemetry variables
-extern float        uavLatitude;                // latitude
-extern float        uavLongitude;               // longitude
-extern uint8_t      uavSatellitesVisible;		// number of satelites
-extern int16_t      uavAltitude;                // altitude (dm)
+extern float			uavLatitude;                // latitude
+extern float			uavLongitude;               // longitude
+extern unsigned char    uavSatellitesVisible;		// number of satelites
+extern int16_t			uavAltitude;                // altitude (dm)
 
 // Home positioning data
 extern float homeLongitude;
 extern float homeLatitude;
 extern float uavDistanceToHome;
-extern int homeBearing;
+extern unsigned char homeBearing;
 
 // Status indicators
 extern bool uavHasGPSFix;
@@ -45,31 +47,31 @@ extern long lastPacketReceived;
 extern LiquidCrystal lcd;
 
 // Tracking variables
-extern int trackingBearing;
-extern int trackingElevation;
+extern unsigned char trackingBearing;
+extern unsigned char trackingElevation;
 
-const int verticalMin = 20;
-const int verticalMid = 70;
-const int verticalMax = 120;
-const int horizontalMin = 0;
-const int horizontalMid = 90;
-const int horizontalMax = 180;
+const unsigned char verticalMin = 20;
+const unsigned char verticalMid = 70;
+const unsigned char verticalMax = 120;
+const unsigned char horizontalMin = 0;
+const unsigned char horizontalMid = 90;
+const unsigned char horizontalMax = 180;
 const int rssi1 = A0;
 const int rssi2 = A1;
 
-extern int rssiTrack;
-extern int rssiFix;
-extern int rssiTrackOld;
-extern int i;
-extern int y;
+extern unsigned char rssiTrack;
+extern unsigned char rssiFix;
+extern unsigned char rssiTrackOld;
+extern unsigned char i;
+extern unsigned char y;
 
-extern char horizontalDirection;
-extern char verticalDirection;
+extern unsigned char horizontalDirection;
+extern unsigned char verticalDirection;
 
 extern Servo VerticalServo;
 extern Servo HorizontalServo;
 
-extern char protocolType;
+extern unsigned char protocolType;
 
 extern void applyServoCommand(int servo, int value);
 

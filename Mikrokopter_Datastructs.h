@@ -11,6 +11,15 @@
 #define s32 int32_t
 
 typedef struct {
+	unsigned char SWMajor;
+	unsigned char SWMinor;
+	unsigned char ProtoMajor;
+	unsigned char ProtoMinor;
+	unsigned char SWPatch;
+	unsigned char HardwareError[5];
+} __attribute__((packed)) str_VersionInfo;
+
+typedef struct {
     s32 Longitude; // in 1E-7 deg
     s32 Latitude; // in 1E-7 deg
     s32 Altitude; // in mm

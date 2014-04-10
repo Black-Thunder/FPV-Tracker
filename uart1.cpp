@@ -242,6 +242,29 @@ void Decode64(void) {
 }
 
 /**
+* Request Data through usart1 until a answer is received
+*/
+void usart1_request_blocking(unsigned char answer, const char* message) {
+	rxdBuffer[2] = answer + 1; // unvalidate answer
+	while (rxdBuffer[2] != answer || !isRxdBufferLocked) {
+		isRxdBufferLocked = 0;
+		usart1_EnableTXD();
+		usart1_puts_pgm(message);
+		usart1_DisableTXD();
+		static uint8_t wait = 0;
+		wait = 0;
+
+		// wait for complete answer
+		while (!isRxdBufferLocked && wait < 200) {
+			wait++;
+			_delay_ms(10);
+		}
+		_delay_ms(150);
+	}
+	Decode64();
+}
+
+/**
 * Request UART Redirect from NC to itself
 */
 void usart1_request_nc_uart(void) {

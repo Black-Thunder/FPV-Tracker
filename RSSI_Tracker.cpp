@@ -1,7 +1,7 @@
 #include "RSSI_Tracker.h"
 #include "TrackerGCS.h"
 
-int rssiDiv = 0;
+unsigned char rssiDiv = 0;
 
 void calculateRSSIDiff() {
 	rssiDiv = rssiTrack - rssiTrackOld;

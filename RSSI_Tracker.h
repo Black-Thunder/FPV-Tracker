@@ -5,6 +5,6 @@ void calculateRSSIDiff();
 void trackHorizontal();
 void trackVertical();
 
-extern int rssiDiv;
+extern unsigned char rssiDiv;
 
 #endif

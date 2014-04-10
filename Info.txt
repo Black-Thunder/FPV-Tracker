@@ -1,1 +1,0 @@
-Kabel mit Knoten auf Pin1 (rot), daneben Masse, ganz außen in der selben Reihe das andere Datenkabel
