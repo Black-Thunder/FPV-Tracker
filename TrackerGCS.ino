@@ -109,7 +109,7 @@ unsigned long deltaTime = 0;
 // ================================================================
 
 void setup() {
-	lcd.begin(20, 4);
+  	lcd.begin(20, 4);
 	lcd.createChar(0, okSmiley);
 	lcd.createChar(1, badSmiley);
 
@@ -201,19 +201,6 @@ void setupUAVCommunication() {
 	if (protocolType == MikrokopterProtocol) {
 		// request NC uart from MK, already done by C-OSD/Smart-OSD
 		//usart1_request_nc_uart();
-
-		// request version from board
-		usart1_request_nc_uart();
-		_delay_ms(200);
-		usart1_request_nc_uart();
-
-		usart1_request_blocking('V', REQUEST_NC_VERSION);
-
-		str_VersionInfo VersionInfo;
-		memcpy((char*)(&VersionInfo), (char*)pRxData, sizeof(str_VersionInfo));
-
-		lcd.setCursor(0, 3);
-		lcd.print("Firmware "); lcd.print(VersionInfo.SWMajor); lcd.print(".0"); lcd.print(VersionInfo.SWMinor); lcd.print('a' + VersionInfo.SWPatch);
 	}
 }
 
