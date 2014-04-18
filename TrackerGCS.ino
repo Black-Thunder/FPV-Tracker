@@ -42,10 +42,10 @@ int16_t uavAltitude = invalidAltitude;
 float homeLongitude = invalidPositionCoordinate;
 float homeLatitude = invalidPositionCoordinate;
 float uavDistanceToHome = 0;
-unsigned char homeBearing = 0;
+unsigned int homeBearing = 0;
 
-unsigned char trackingBearing = 0;
-unsigned char trackingElevation = 0;
+unsigned int trackingBearing = 0;
+unsigned int trackingElevation = 0;
 
 bool uavHasGPSFix = false;
 bool isTelemetryOk = false;

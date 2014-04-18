@@ -180,7 +180,7 @@ void processUsart1Data(void)
 		if (!isMessageCorrupted) {
 			memcpy((char*)(&telemetryPacketAeroQuad), (char*)rxdBuffer, sizeof(TelemetryPacket_t));
 
-			uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo;
+			uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo >> 12;
 			uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
 			uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
 			uavAltitude = telemetryPacketAeroQuad.altitude / 10;

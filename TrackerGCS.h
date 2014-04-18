@@ -37,7 +37,7 @@ extern int16_t			uavAltitude;                // altitude (dm)
 extern float homeLongitude;
 extern float homeLatitude;
 extern float uavDistanceToHome;
-extern unsigned char homeBearing;
+extern unsigned int homeBearing;
 
 // Status indicators
 extern bool uavHasGPSFix;
@@ -47,15 +47,15 @@ extern long lastPacketReceived;
 extern LiquidCrystal lcd;
 
 // Tracking variables
-extern unsigned char trackingBearing;
-extern unsigned char trackingElevation;
+extern unsigned int trackingBearing;
+extern unsigned int trackingElevation;
 
-const unsigned char verticalMin = 20;
-const unsigned char verticalMid = 70;
-const unsigned char verticalMax = 120;
-const unsigned char horizontalMin = 0;
-const unsigned char horizontalMid = 90;
-const unsigned char horizontalMax = 180;
+const unsigned int verticalMin = 20;
+const unsigned int verticalMid = 70;
+const unsigned int verticalMax = 120;
+const unsigned int horizontalMin = 0;
+const unsigned int horizontalMid = 90;
+const unsigned int horizontalMax = 180;
 const int rssi1 = A0;
 const int rssi2 = A1;
 

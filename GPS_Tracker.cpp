@@ -12,7 +12,6 @@ void updateGCSPosition() {
 	if (haveAGpsLock()) {
 		homeLatitude = gpsData.lat / 1.0e7f;
 		homeLongitude = gpsData.lon / 1.0e7f;
-
 		isHomePositionSet = true;
 	}
 }
