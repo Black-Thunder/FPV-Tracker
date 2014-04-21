@@ -420,7 +420,7 @@ void processTracking() {
 	}
 }
 
-void applyServoCommand(int servo, int value) {
+void applyServoCommand(int servo, unsigned int value) {
 	if (servo > horizontalServo) return;
 
 	if (servo == verticalServo) {

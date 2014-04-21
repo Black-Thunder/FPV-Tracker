@@ -73,6 +73,6 @@ extern Servo HorizontalServo;
 
 extern unsigned char protocolType;
 
-extern void applyServoCommand(int servo, int value);
+extern void applyServoCommand(int servo, unsigned int value);
 
 #endif
