@@ -4,15 +4,36 @@
 #include <math.h>
 
 HMC5883L compass;
-bool isHomePositionSet = false;
+
+uint8_t countToInitHome = 0;
 
 const float R = 6371000.0;    //in meters. Earth radius 6371km
 
+unsigned long previousFixTime = 0;
+
+bool haveNewGpsPosition() {
+  return (haveAGpsLock() && (previousFixTime != getGpsFixTime()));
+}
+
+void clearNewGpsPosition() {
+  previousFixTime = getGpsFixTime();
+}
+  
+bool isHomeBaseInitialized() {
+  return homeLatitude != GPS_INVALID_ANGLE;
+}
+
 void updateGCSPosition() {
-	if (haveAGpsLock()) {
-		homeLatitude = gpsData.lat / 1.0e7f;
-		homeLongitude = gpsData.lon / 1.0e7f;
-		isHomePositionSet = true;
+	if (haveNewGpsPosition()) {
+		clearNewGpsPosition();
+		
+		if (countToInitHome < MIN_NB_GPS_READ_TO_INIT_HOME) {
+			countToInitHome++;
+		}
+		else {
+			homeLatitude = gpsData.lat / 1.0e7f;
+			homeLongitude = gpsData.lon / 1.0e7f;
+		}
 	}
 }
 

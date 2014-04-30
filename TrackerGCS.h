@@ -8,8 +8,6 @@
 #define numberOfRSSISamples 10
 
 #define minTrackingDistance 5					// Minimum distance in meters before tracking will start
-#define invalidPositionCoordinate 0x7FFFFFFF
-#define invalidAltitude 65535
 
 #define verticalServoPin 10
 #define horizontalServoPin 11

@@ -34,13 +34,13 @@ unsigned char protocolType = AeroQuadProtocol;
 const unsigned char protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
 bool lastProtocolTypeSwitchState = LOW;
 
-float uavLatitude = invalidPositionCoordinate;
-float uavLongitude = invalidPositionCoordinate;
+float uavLatitude = GPS_INVALID_ANGLE;
+float uavLongitude = GPS_INVALID_ANGLE;
 unsigned char uavSatellitesVisible = 0;
-int16_t uavAltitude = invalidAltitude;
+int16_t uavAltitude = GPS_INVALID_ALTITUDE;
 
-float homeLongitude = invalidPositionCoordinate;
-float homeLatitude = invalidPositionCoordinate;
+float homeLongitude = GPS_INVALID_ANGLE;
+float homeLatitude = GPS_INVALID_ANGLE;
 float uavDistanceToHome = 0;
 unsigned int homeBearing = 0;
 
@@ -306,7 +306,7 @@ void process10HzTask() {
 
 void process5HzTask() {
 	if (trackingMode == GPSTrackingMode) {
-		if (isGPSConfigured) {
+		if (!isHomeBaseInitialized() && isGPSConfigured) {
 			updateGCSPosition();
 		}
 
@@ -381,7 +381,7 @@ void processTracking() {
 	}
 	else if (trackingMode == GPSTrackingMode) {
 		// Only move servo if home position is set, data link is OK and UAV has GPS fix, otherwise standby to last known position
-		if (isHomePositionSet && isTelemetryOk && uavHasGPSFix) {
+		if (isHomeBaseInitialized() && isTelemetryOk && uavHasGPSFix) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
 
 			if (uavDistanceToHome > minTrackingDistance) {

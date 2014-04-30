@@ -73,17 +73,8 @@ bool haveAGpsLock() {
 	return (gpsData.state > GPS_NOFIX) && (gpsData.sats >= MIN_NB_SATS_IN_USE);
 }
 
-long getCourse() {
-	return gpsData.course / 1000; // to whole degrees
-}
-unsigned long getGpsSpeed() {
-	return gpsData.speed;
-}
-
 unsigned long getGpsFixTime() {
 	return gpsData.fixtime;
 }
 
-unsigned long getGpsAltitude() {
-	return gpsData.height;
-}
+

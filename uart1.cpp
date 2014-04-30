@@ -183,7 +183,7 @@ void processUsart1Data(void)
 			uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo >> 12;
 			uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
 			uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
-			uavAltitude = telemetryPacketAeroQuad.altitude / 10;
+			uavAltitude = telemetryPacketAeroQuad.altitude;
 		}
 	}
 	else if (protocolType == MikrokopterProtocol) {
