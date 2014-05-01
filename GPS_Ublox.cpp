@@ -164,7 +164,7 @@ void ubloxParseData() {// uses publib vars
 		if (ubloxId == 2) { // NAV:POSLLH
 			gpsData.lat = ubloxMessage.nav_posllh.lat;
 			gpsData.lon = ubloxMessage.nav_posllh.lon;
-            gpsData.fixtime = ubloxMessage.nav_posllh.iTow;
+			gpsData.fixtime = ubloxMessage.nav_posllh.iTow;
 		}
 		else if (ubloxId == 6) { // NAV:SOL
 			gpsData.sats = ubloxMessage.nav_sol.numSV;
