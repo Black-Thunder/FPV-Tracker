@@ -469,14 +469,19 @@ void updateLCD() {
 	}
 
 	lcd.setCursor(0, 3);
-	lcd.print("Voltage: ");
-	lcd.print(battVoltage);
-	lcd.print("V");
 
-	if (isBattLow) {
-		lcd.print(" LOW !!");
+	if(!isHomeBaseInitialized()) {
+		lcd.print("Waiting for GPS fix");
 	}
+	else {
+		lcd.print("Voltage: ");
+		lcd.print(battVoltage);
+		lcd.print("V");
 
+		if (isBattLow) {
+			lcd.print(" LOW !!");
+		}
+	}
 }
 
 void checkSwitchState() {

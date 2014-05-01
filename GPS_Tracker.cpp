@@ -33,6 +33,9 @@ void updateGCSPosition() {
 		else {
 			homeLatitude = gpsData.lat / 1.0e7f;
 			homeLongitude = gpsData.lon / 1.0e7f;
+
+			lcd.setCursor(0, 3);
+			lcd.print("Home position OK    ");
 		}
 	}
 }
