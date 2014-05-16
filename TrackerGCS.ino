@@ -109,7 +109,7 @@ unsigned long deltaTime = 0;
 // ================================================================
 
 void setup() {
-  	lcd.begin(20, 4);
+	lcd.begin(20, 4);
 	lcd.createChar(0, okSmiley);
 	lcd.createChar(1, badSmiley);
 
@@ -466,21 +466,29 @@ void updateLCD() {
 			lcd.print("!! LINK LOST !! ");
 			lcd.write(1);
 		}
-	}
 
+		if (!isHomeBaseInitialized()) {
+			lcd.setCursor(0, 3);
+			lcd.print("Waiting for GPS fix");
+		}
+		else {
+			printVoltage();
+		}
+	}
+	else if (trackingMode == RSSITrackingMode) {
+		printVoltage();
+	}
+}
+
+void printVoltage() {
 	lcd.setCursor(0, 3);
 
-	if(!isHomeBaseInitialized()) {
-		lcd.print("Waiting for GPS fix");
-	}
-	else {
-		lcd.print("Voltage: ");
-		lcd.print(battVoltage);
-		lcd.print("V");
+	lcd.print("Voltage: ");
+	lcd.print(battVoltage);
+	lcd.print("V");
 
-		if (isBattLow) {
-			lcd.print(" LOW !!");
-		}
+	if (isBattLow) {
+		lcd.print(" LOW !!");
 	}
 }
 
