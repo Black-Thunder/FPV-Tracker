@@ -31,7 +31,7 @@ unsigned char verticalDirection = 0;
 
 // GPS tracking
 unsigned char protocolType = AeroQuadProtocol;
-const unsigned char protocolTypeSwitchPin = 8; // Switch to determine protocol type on start-up; LOW=AeroQuad, HIGH=Mikrokopter
+const unsigned char protocolTypeSwitchPin = 8; // Hardware switch to determine protocol type; LOW=AeroQuad, HIGH=Mikrokopter
 bool lastProtocolTypeSwitchState = LOW;
 
 float uavLatitude = GPS_INVALID_ANGLE;
@@ -53,7 +53,7 @@ long lastPacketReceived = 0;
 
 // General
 unsigned char trackingMode = GPSTrackingMode;
-const unsigned char trackingModeSwitchPin = 9; // Switch to determine tracking mode on start-up; LOW=RSSI, HIGH=GPS
+const unsigned char trackingModeSwitchPin = 9; // Hardware switch to determine tracking mode; LOW=RSSI, HIGH=GPS
 bool lastTrackingModeSwitchState = LOW;
 
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
@@ -93,7 +93,7 @@ Servo HorizontalServo;
 float battVoltage = 0;
 bool isBattLow = false;
 
-// Main loop time variable
+// Main loop time variables
 unsigned char frameCounter = 0;
 unsigned long previousTime = 0;
 unsigned long currentTime = 0;
@@ -115,6 +115,7 @@ void setup() {
 
 	VerticalServo.attach(verticalServoPin);
 	HorizontalServo.attach(horizontalServoPin);
+	writeServos(); // move servos to middle position on start-up
 
 	determineTrackingMode();
 	calibrateRSSI();
@@ -144,16 +145,16 @@ void calibrateRSSI() {
 	lcd.print("Calibrating RSSI... ");
 
 	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
-		calibrate1 = calibrate1 + analogRead(rssi1);
+		calibrate1 += analogRead(rssi1);
 		delay(50);
 	}
-	calibrate1 = calibrate1 / numberOfRSSISamples;
+	calibrate1 /= numberOfRSSISamples;
 
 	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
-		calibrate2 = calibrate2 + analogRead(rssi2);
+		calibrate2 += analogRead(rssi2);
 		delay(50);
 	}
-	calibrate2 = calibrate2 / numberOfRSSISamples;
+	calibrate2 /= numberOfRSSISamples;
 }
 
 void setupGPSTrackingMode() {
@@ -173,7 +174,7 @@ void setupGPSTrackingMode() {
 		lcd.setCursor(0, 2);
 		lcd.print("GPS Failure!        ");
 		lcd.setCursor(0, 3);
-		lcd.print("No home position!   ");
+		lcd.print("No Tracking!        ");
 		delay(2000);  // Keep LCD message visible
 	}
 
@@ -297,8 +298,8 @@ void process10HzTask() {
 
 		processUsart1Data();
 
-		// No telemetry data received for more than 2 seconds
-		if (millis() - lastPacketReceived > 2000) {
+		// No telemetry data received for more than 2.5 seconds
+		if (millis() - lastPacketReceived > 2500) {
 			isTelemetryOk = false;
 		}
 	}
@@ -467,7 +468,11 @@ void updateLCD() {
 			lcd.write(1);
 		}
 
-		if (!isHomeBaseInitialized()) {
+		if (!isGPSConfigured) {
+			lcd.setCursor(0, 3);
+			lcd.print("GPS Failure!       ");
+		}
+		else if (!isHomeBaseInitialized()) {
 			lcd.setCursor(0, 3);
 			lcd.print("Waiting for GPS fix");
 		}
