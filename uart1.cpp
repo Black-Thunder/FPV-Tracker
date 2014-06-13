@@ -183,6 +183,8 @@ void processUsart1Data(void)
 			uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo >> 12;
 			uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
 			uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
+
+                        if(telemetryPacketAeroQuad.altitude < 0) telemetryPacketAeroQuad.altitude = 0;
 			uavAltitude = telemetryPacketAeroQuad.altitude;
 		}
 	}
@@ -194,11 +196,11 @@ void processUsart1Data(void)
 			uavSatellitesVisible = telemetryPacketMikrokopter.SatsInUse;
 			uavLatitude = telemetryPacketMikrokopter.CurrentPosition.Latitude / 1.0e7f;
 			uavLongitude = telemetryPacketMikrokopter.CurrentPosition.Longitude / 1.0e7f;
+
+                        if(telemetryPacketMikrokopter.Altimeter < 0) telemetryPacketMikrokopter.Altimeter = 0;
 			uavAltitude = telemetryPacketMikrokopter.Altimeter / 2;
 		}
 	}
-	
-	if(uavAltitude < 0) uavAltitude = 0;
 
 	lastPacketReceived = millis();
 	isTelemetryOk = true;
