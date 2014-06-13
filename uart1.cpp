@@ -197,6 +197,8 @@ void processUsart1Data(void)
 			uavAltitude = telemetryPacketMikrokopter.Altimeter / 2;
 		}
 	}
+	
+	if(uavAltitude < 0) uavAltitude = 0;
 
 	lastPacketReceived = millis();
 	isTelemetryOk = true;
