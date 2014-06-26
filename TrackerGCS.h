@@ -54,8 +54,8 @@ const unsigned int verticalMax = 120;
 const unsigned int horizontalMin = 0;
 const unsigned int horizontalMid = 90;
 const unsigned int horizontalMax = 180;
-const int rssi1 = A0;
-const int rssi2 = A1;
+const int rssiTrackPin = A0;
+const int rssiFixPin = A1;
 
 extern unsigned char rssiTrack;
 extern unsigned char rssiFix;

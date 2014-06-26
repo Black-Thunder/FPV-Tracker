@@ -21,8 +21,8 @@ unsigned char rssiTrackingVariablesMemory[memorySize][horizontalIndex + 1];
 unsigned char rssiTrackingCounter = 0;
 bool isRSSITrackingStopped = false;
 
-int calibrate1 = 0;
-int calibrate2 = 0;
+int calibrateTrack = 0;
+int calibrateFix = 0;
 unsigned char i = horizontalMid;
 unsigned char y = verticalMid;
 
@@ -145,16 +145,16 @@ void calibrateRSSI() {
 	lcd.print("Calibrating RSSI... ");
 
 	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
-		calibrate1 += analogRead(rssi1);
+		calibrateTrack += analogRead(rssiTrackPin);
 		delay(50);
 	}
-	calibrate1 /= numberOfRSSISamples;
+	calibrateTrack /= numberOfRSSISamples;
 
 	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
-		calibrate2 += analogRead(rssi2);
+		calibrateFix += analogRead(rssiFixPin);
 		delay(50);
 	}
-	calibrate2 /= numberOfRSSISamples;
+	calibrateFix /= numberOfRSSISamples;
 }
 
 void setupGPSTrackingMode() {
@@ -513,8 +513,8 @@ void checkSwitchState() {
 void readRSSI() {
 	rssiTrackOld = rssiTrack;
 
-	rssiTrack = map(analogRead(rssi1), 0, calibrate1, 0, 100);
-	rssiFix = map(analogRead(rssi2), 0, calibrate2, 0, 100);
+	rssiTrack = map(analogRead(rssiTrackPin), 0, calibrateTrack, 0, 100);
+	rssiFix = map(analogRead(rssiFixPin), 0, calibrateFix, 0, 100);
 
 	rssiTrack = constrain(rssiTrack, 0, 100);
 	rssiFix = constrain(rssiFix, 0, 100);
