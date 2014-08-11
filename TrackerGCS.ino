@@ -1,15 +1,37 @@
-#include <LiquidCrystal.h>
+#include "config.h"
 #include <Servo.h>
 #include "TrackerGCS.h"
+
+#if defined PRO_MINI
+#define RSSI_TRACKING
+
+unsigned char trackingMode = RSSITrackingMode;
+#endif
+
+#if defined MEGA
+#define GPS_TRACKING
+#define RSSI_TRACKING
+#define LCD_AVAILABLE
+#endif
+
+#if defined LCD_AVAILABLE
+#include <LiquidCrystal.h>
+#endif
+
+#if defined RSSI_TRACKING
 #include "RSSI_Tracker.h"
+#endif
+
+#if defined GPS_TRACKING
 #include "GPS_Tracker.h"
-#include "GPS_Adapter.h"
 #include "HMC5883L.h"
 #include "uart1.h"
 #include "Mikrokopter_Datastructs.h"
 #include "AeroQuad_Datastructs.h"
+#endif
 
 // RSSI tracking
+#if defined RSSI_TRACKING
 const unsigned char horizontalTolerance = 2;
 const unsigned char thresholdValue = 80;
 
@@ -28,8 +50,10 @@ unsigned char y = verticalMid;
 
 unsigned char horizontalDirection = 0;
 unsigned char verticalDirection = 0;
+#endif
 
 // GPS tracking
+#if defined GPS_TRACKING
 unsigned char protocolType = AeroQuadProtocol;
 const unsigned char protocolTypeSwitchPin = 8; // Hardware switch to determine protocol type; LOW=AeroQuad, HIGH=Mikrokopter
 bool lastProtocolTypeSwitchState = LOW;
@@ -50,12 +74,16 @@ unsigned int trackingElevation = 0;
 bool uavHasGPSFix = false;
 bool isTelemetryOk = false;
 long lastPacketReceived = 0;
+#endif
 
 // General
+#if !defined PRO_MINI
 unsigned char trackingMode = GPSTrackingMode;
 const unsigned char trackingModeSwitchPin = 9; // Hardware switch to determine tracking mode; LOW=RSSI, HIGH=GPS
 bool lastTrackingModeSwitchState = LOW;
+#endif
 
+#if defined LCD_AVAILABLE
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
 byte okSmiley[8] = {
@@ -79,6 +107,7 @@ byte badSmiley[8] = {
 	B10001,
 	B00000
 };
+#endif
 
 unsigned char rssiTrack = 0;
 unsigned char rssiFix = 0;
@@ -104,45 +133,11 @@ unsigned long deltaTime = 0;
 #define TASK_5HZ 20
 #define TASK_1HZ 100
 
-// ================================================================
-// Setup section
-// ================================================================
-
-void setup() {
-	lcd.begin(20, 4);
-	lcd.createChar(0, okSmiley);
-	lcd.createChar(1, badSmiley);
-
-	VerticalServo.attach(verticalServoPin);
-	HorizontalServo.attach(horizontalServoPin);
-	writeServos(); // move servos to middle position on start-up
-
-	determineTrackingMode();
-	calibrateRSSI();
-}
-
-void determineTrackingMode() {
-	if (digitalRead(trackingModeSwitchPin) == HIGH) {
-		trackingMode = RSSITrackingMode;
-		lastTrackingModeSwitchState = HIGH;
-
-		lcd.setCursor(0, 0);
-		lcd.print("Mode: RSSI          ");
-	}
-	else {
-		trackingMode = GPSTrackingMode;
-		lastTrackingModeSwitchState = LOW;
-
-		lcd.setCursor(0, 0);
-		lcd.print("Mode: GPS           ");
-
-		setupGPSTrackingMode();
-	}
-}
-
 void calibrateRSSI() {
+#if defined LCD_AVAILABLE
 	lcd.setCursor(0, 2);
 	lcd.print("Calibrating RSSI... ");
+#endif
 
 	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
 		calibrateTrack += analogRead(rssiTrackPin);
@@ -150,37 +145,16 @@ void calibrateRSSI() {
 	}
 	calibrateTrack /= numberOfRSSISamples;
 
+#if defined DIVERSITY
 	for (unsigned char counter = 0; counter < numberOfRSSISamples; counter++) {
 		calibrateFix += analogRead(rssiFixPin);
 		delay(50);
 	}
 	calibrateFix /= numberOfRSSISamples;
+#endif
 }
 
-void setupGPSTrackingMode() {
-	determineProtocolType();
-
-	usart1_init();
-	usart1_DisableTXD();
-	sei();
-
-	setupUAVCommunication();
-
-	lcd.setCursor(0, 2);
-	lcd.print("Configuring GPS...  ");
-	initializeGps();
-
-	if (!isGPSConfigured) {
-		lcd.setCursor(0, 2);
-		lcd.print("GPS Failure!        ");
-		lcd.setCursor(0, 3);
-		lcd.print("No Tracking!        ");
-		delay(2000);  // Keep LCD message visible
-	}
-
-	setupHMC5883L();
-}
-
+#if !defined PRO_MINI
 void determineProtocolType() {
 	if (digitalRead(protocolTypeSwitchPin) == HIGH) {
 		protocolType = MikrokopterProtocol;
@@ -226,105 +200,49 @@ void setupHMC5883L(){
 	}
 }
 
-// ================================================================
-// Main loop
-// ================================================================
+void setupGPSTrackingMode() {
+	determineProtocolType();
 
-void loop() {
-	currentTime = micros();
-	deltaTime = currentTime - previousTime;
+	usart1_init();
+	usart1_DisableTXD();
+	sei();
 
-	// ================================================================
-	// 100Hz task loop
-	// ================================================================
-	if (deltaTime >= 10000) {
-		frameCounter++;
+	setupUAVCommunication();
 
-		process100HzTask();
+	lcd.setCursor(0, 2);
+	lcd.print("Configuring GPS...  ");
+	initializeGps();
 
-		// ================================================================
-		// 50Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_50HZ == 0) { // 50 Hz tasks
-			process50HzTask();
-		}
-
-		// ================================================================
-		// 10Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_10HZ == 0) {  // 10 Hz tasks
-			process10HzTask();
-		}
-
-		// ================================================================
-		// 5Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_5HZ == 0) {  //  5 Hz tasks
-			process5HzTask();
-		}
-
-		// ================================================================
-		// 1Hz task loop
-		// ================================================================
-		if (frameCounter % TASK_1HZ == 0) {  //  1 Hz tasks
-			process1HzTask();
-		}
-
-		previousTime = currentTime;
+	if (!isGPSConfigured) {
+		lcd.setCursor(0, 2);
+		lcd.print("GPS Failure!        ");
+		lcd.setCursor(0, 3);
+		lcd.print("No Tracking!        ");
+		delay(2000);  // Keep LCD message visible
 	}
 
-	if (frameCounter >= 100) {
-		frameCounter = 0;
+	setupHMC5883L();
+}
+
+void determineTrackingMode() {
+	if (digitalRead(trackingModeSwitchPin) == HIGH) {
+		trackingMode = RSSITrackingMode;
+		lastTrackingModeSwitchState = HIGH;
+
+		lcd.setCursor(0, 0);
+		lcd.print("Mode: RSSI          ");
 	}
+	else {
+		trackingMode = GPSTrackingMode;
+		lastTrackingModeSwitchState = LOW;
 
-}
+		lcd.setCursor(0, 0);
+		lcd.print("Mode: GPS           ");
 
-void process100HzTask() {
-	if (trackingMode == GPSTrackingMode) {
-		updateGps();
-	}
-}
-
-void process50HzTask() {
-	writeServos();
-}
-
-void process10HzTask() {
-	if (trackingMode == GPSTrackingMode) {
-		// Request data from MK, this is already done by C-OSD/Smart-OSD
-		//if (protocolType == MikrokopterProtocol) {
-		//	requestMikrokopterTelemetryData();
-		//}
-
-		processUsart1Data();
-
-		// No telemetry data received for more than 2.5 seconds
-		if (millis() - lastPacketReceived > 2500) {
-			isTelemetryOk = false;
-		}
+		setupGPSTrackingMode();
 	}
 }
-
-void process5HzTask() {
-	if (trackingMode == GPSTrackingMode) {
-		if (!isHomeBaseInitialized() && isGPSConfigured) {
-			updateGCSPosition();
-		}
-
-		if (compass.isMagDetected) {
-			updateGCSHeading();
-		}
-	}
-
-	readRSSI();
-	processTracking();
-}
-
-void process1HzTask() {
-	measureBatteryVoltage();
-	updateLCD();
-	checkSwitchState();
-}
+#endif
 
 void processTracking() {
 	if (trackingMode == RSSITrackingMode) {
@@ -380,7 +298,8 @@ void processTracking() {
 			isRSSITrackingStopped = false;
 		}
 	}
-	else if (trackingMode == GPSTrackingMode) {
+#if !defined PRO_MINI
+	if (trackingMode == GPSTrackingMode) {
 		// Only move servo if home position is set, data link is OK and UAV has GPS fix, otherwise standby to last known position
 		if (isHomeBaseInitialized() && isTelemetryOk && uavHasGPSFix) {
 			calculateTrackingVariables(homeLongitude, homeLatitude, uavLongitude, uavLatitude, uavAltitude);
@@ -419,6 +338,7 @@ void processTracking() {
 			}
 		}
 	}
+#endif
 }
 
 void applyServoCommand(int servo, unsigned int value) {
@@ -444,6 +364,19 @@ void writeServos() {
 	if (previousServoCommands[horizontalServo] != servoCommands[horizontalServo]) {
 		HorizontalServo.write(servoCommands[horizontalServo]);
 		previousServoCommands[horizontalServo] = servoCommands[horizontalServo];
+	}
+}
+
+#if defined LCD_AVAILABLE
+void printVoltage() {
+	lcd.setCursor(0, 3);
+
+	lcd.print("Voltage: ");
+	lcd.print(battVoltage);
+	lcd.print("V");
+
+	if (isBattLow) {
+		lcd.print(" LOW !!");
 	}
 }
 
@@ -485,18 +418,17 @@ void updateLCD() {
 	}
 }
 
-void printVoltage() {
-	lcd.setCursor(0, 3);
+void measureBatteryVoltage() {
+	battVoltage = analogRead(battMonitorPin);
+	battVoltage = (battVoltage * battAREFValue) / 1024.0;
+	battVoltage /= (battResistorLow / (battResistorHigh + battResistorLow));
 
-	lcd.print("Voltage: ");
-	lcd.print(battVoltage);
-	lcd.print("V");
-
-	if (isBattLow) {
-		lcd.print(" LOW !!");
-	}
+	if (battVoltage < 6.6) isBattLow = true;
+	else isBattLow = false;
 }
+#endif
 
+#if !defined PRO_MINI
 void checkSwitchState() {
 	if (digitalRead(trackingModeSwitchPin) != lastTrackingModeSwitchState) {
 		lcd.clear();
@@ -510,16 +442,6 @@ void checkSwitchState() {
 	}
 }
 
-void readRSSI() {
-	rssiTrackOld = rssiTrack;
-
-	rssiTrack = map(analogRead(rssiTrackPin), 0, calibrateTrack, 0, 100);
-	rssiFix = map(analogRead(rssiFixPin), 0, calibrateFix, 0, 100);
-
-	rssiTrack = constrain(rssiTrack, 0, 100);
-	rssiFix = constrain(rssiFix, 0, 100);
-}
-
 void requestMikrokopterTelemetryData() {
 	usart1_EnableTXD();
 
@@ -528,12 +450,149 @@ void requestMikrokopterTelemetryData() {
 
 	usart1_DisableTXD();
 }
+#endif
 
-void measureBatteryVoltage() {
-	battVoltage = analogRead(battMonitorPin);
-	battVoltage = (battVoltage * battAREFValue) / 1024.0;
-	battVoltage /= (battResistorLow / (battResistorHigh + battResistorLow));
+void readRSSI() {
+	rssiTrackOld = rssiTrack;
 
-	if (battVoltage < 6.6) isBattLow = true;
-	else isBattLow = false;
+	rssiTrack = map(analogRead(rssiTrackPin), 0, calibrateTrack, 0, 100);
+	rssiTrack = constrain(rssiTrack, 0, 100);
+
+#if defined DIVERSITY
+	rssiFix = map(analogRead(rssiFixPin), 0, calibrateFix, 0, 100);
+	rssiFix = constrain(rssiFix, 0, 100);
+#endif
+}
+
+void process100HzTask() {
+#if !defined PRO_MINI
+	if (trackingMode == GPSTrackingMode) {
+		updateGps();
+	}
+#endif
+}
+
+void process50HzTask() {
+	writeServos();
+}
+
+void process10HzTask() {
+#if !defined PRO_MINI
+	if (trackingMode == GPSTrackingMode) {
+		// Request data from MK, this is already done by C-OSD/Smart-OSD
+		//if (protocolType == MikrokopterProtocol) {
+		//	requestMikrokopterTelemetryData();
+		//}
+
+		processUsart1Data();
+
+		// No telemetry data received for more than 2.5 seconds
+		if (millis() - lastPacketReceived > 2500) {
+			isTelemetryOk = false;
+		}
+	}
+#endif
+}
+
+void process5HzTask() {
+#if !defined PRO_MINI
+	if (trackingMode == GPSTrackingMode) {
+		if (!isHomeBaseInitialized() && isGPSConfigured) {
+			updateGCSPosition();
+		}
+
+		if (compass.isMagDetected) {
+			updateGCSHeading();
+		}
+	}
+#endif
+
+	readRSSI();
+	processTracking();
+}
+
+void process1HzTask() {
+#if defined LCD_AVAILABLE
+	measureBatteryVoltage();
+	updateLCD();
+#endif
+
+#if !defined PRO_MINI
+	checkSwitchState();
+#endif
+}
+
+// ================================================================
+// Setup section
+// ================================================================
+
+void setup() {
+#if defined LCD_AVAILABLE
+	lcd.begin(20, 4);
+	lcd.createChar(0, okSmiley);
+	lcd.createChar(1, badSmiley);
+#endif
+
+	VerticalServo.attach(verticalServoPin);
+	HorizontalServo.attach(horizontalServoPin);
+	writeServos(); // move servos to middle position on start-up
+
+#if !defined PRO_MINI
+	determineTrackingMode();
+#endif
+
+	calibrateRSSI();
+}
+
+// ================================================================
+// Main loop
+// ================================================================
+
+void loop() {
+	currentTime = micros();
+	deltaTime = currentTime - previousTime;
+
+	// ================================================================
+	// 100Hz task loop
+	// ================================================================
+	if (deltaTime >= 10000) {
+		frameCounter++;
+
+		process100HzTask();
+
+		// ================================================================
+		// 50Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_50HZ == 0) { // 50 Hz tasks
+			process50HzTask();
+		}
+
+		// ================================================================
+		// 10Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_10HZ == 0) {  // 10 Hz tasks
+			process10HzTask();
+		}
+
+		// ================================================================
+		// 5Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_5HZ == 0) {  //  5 Hz tasks
+			process5HzTask();
+		}
+
+		// ================================================================
+		// 1Hz task loop
+		// ================================================================
+		if (frameCounter % TASK_1HZ == 0) {  //  1 Hz tasks
+			process1HzTask();
+		}
+
+		previousTime = currentTime;
+	}
+
+	if (frameCounter >= 100) {
+		frameCounter = 0;
+	}
+
 }
