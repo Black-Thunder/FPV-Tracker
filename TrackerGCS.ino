@@ -11,7 +11,6 @@ unsigned char trackingMode = RSSITrackingMode;
 #if defined MEGA
 #define GPS_TRACKING
 #define RSSI_TRACKING
-#define LCD_AVAILABLE
 #endif
 
 #if defined LCD_AVAILABLE
@@ -369,9 +368,12 @@ void writeServos() {
 
 #if defined LCD_AVAILABLE
 void printVoltage() {
+#if defined SMALL_LCD
+        lcd.setCursor(0, 2);
+#else 
 	lcd.setCursor(0, 3);
-
 	lcd.print("Voltage: ");
+#endif
 	lcd.print(battVoltage);
 	lcd.print("V");
 
@@ -385,10 +387,12 @@ void updateLCD() {
 	lcd.setCursor(0, 0);
 	lcd.print("RSSI Track ");
 	lcd.print(rssiTrack);
+#if defined DIVERSITY
 	lcd.setCursor(0, 1);
 	lcd.print("RSSI Fix   ");
 	lcd.print(rssiFix);
-
+#endif
+#if defined GPS_TRACKING
 	if (trackingMode == GPSTrackingMode) {
 		lcd.setCursor(0, 2);
 
@@ -413,7 +417,8 @@ void updateLCD() {
 			printVoltage();
 		}
 	}
-	else if (trackingMode == RSSITrackingMode) {
+#endif	
+        if (trackingMode == RSSITrackingMode) {
 		printVoltage();
 	}
 }
@@ -528,9 +533,13 @@ void process1HzTask() {
 
 void setup() {
 #if defined LCD_AVAILABLE
+#if defined SMALL_LCD
+        lcd.begin(16, 2);
+#else
 	lcd.begin(20, 4);
 	lcd.createChar(0, okSmiley);
 	lcd.createChar(1, badSmiley);
+#endif
 #endif
 
 	VerticalServo.attach(verticalServoPin);
