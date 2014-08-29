@@ -33,6 +33,7 @@ unsigned char trackingMode = RSSITrackingMode;
 #if defined RSSI_TRACKING
 const unsigned char horizontalTolerance = 2;
 const unsigned char thresholdValue = 80;
+const unsigned char minTrackingValue = 60;
 
 const unsigned char memorySize = 15;
 const unsigned char rssiIndex = 0;
@@ -284,14 +285,16 @@ void processTracking() {
 			else {
 				trackHorizontal();
 			}
-
-			// Store current RSSI value and the corresponding servo positions
-			rssiTrackingVariablesMemory[rssiTrackingCounter][rssiIndex] = rssiTrack;
-			rssiTrackingVariablesMemory[rssiTrackingCounter][verticalIndex] = servoCommands[verticalServo];
-			rssiTrackingVariablesMemory[rssiTrackingCounter][horizontalIndex] = servoCommands[horizontalServo];
-			rssiTrackingCounter++;
+			
+			if (rssiTrack <= minTrackingValue) {
+				// Store current RSSI value and the corresponding servo positions
+				rssiTrackingVariablesMemory[rssiTrackingCounter][rssiIndex] = rssiTrack;
+				rssiTrackingVariablesMemory[rssiTrackingCounter][verticalIndex] = servoCommands[verticalServo];
+				rssiTrackingVariablesMemory[rssiTrackingCounter][horizontalIndex] = servoCommands[horizontalServo];
+				rssiTrackingCounter++;
+			}
 		}
-		else if (rssiTrack > thresholdValue) {
+		if (rssiTrack > minTrackingValue) {
 			// Reset rssiTrackingCounter and start tracking
 			rssiTrackingCounter = 0;
 			isRSSITrackingStopped = false;
