@@ -333,7 +333,7 @@ void processTracking() {
 					trackingBearing = horizontalMax;
 				}
 
-				trackingElevation = map(trackingElevation, 0, 90, 0, 180);
+				trackingElevation = map(trackingElevation, verticalMin, verticalMax, 0, 180);
 
 				applyServoCommand(horizontalServo, trackingBearing);
 				applyServoCommand(verticalServo, trackingElevation);

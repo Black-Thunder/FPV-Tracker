@@ -48,8 +48,8 @@ extern LiquidCrystal lcd;
 extern unsigned int trackingBearing;
 extern unsigned int trackingElevation;
 
-const unsigned int verticalMin = 20;
-const unsigned int verticalMid = 70;
+const unsigned int verticalMin = 0;
+const unsigned int verticalMid = 60;
 const unsigned int verticalMax = 120;
 const unsigned int horizontalMin = 0;
 const unsigned int horizontalMid = 90;
