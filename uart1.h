@@ -231,8 +231,8 @@ void processUsart1Data(void)
 			memcpy((char*)(&telemetryPacketAeroQuad), (char*)rxdBuffer, sizeof(TelemetryPacket_t));
 
 			uavSatellitesVisible = telemetryPacketAeroQuad.gpsinfo >> 12;
-			uavLatitude = telemetryPacketAeroQuad.latitude / 1.0e7f;
-			uavLongitude = telemetryPacketAeroQuad.longitude / 1.0e7f;
+			uavLatitude = telemetryPacketAeroQuad.latitude;
+			uavLongitude = telemetryPacketAeroQuad.longitude;
 
 			if (telemetryPacketAeroQuad.altitude < 0) telemetryPacketAeroQuad.altitude = 0;
 			uavAltitude = telemetryPacketAeroQuad.altitude;
@@ -244,8 +244,8 @@ void processUsart1Data(void)
 			memcpy((char*)(&telemetryPacketMikrokopter), (char*)pRxData, sizeof(NaviData_t));
 
 			uavSatellitesVisible = telemetryPacketMikrokopter.SatsInUse;
-			uavLatitude = telemetryPacketMikrokopter.CurrentPosition.Latitude / 1.0e7f;
-			uavLongitude = telemetryPacketMikrokopter.CurrentPosition.Longitude / 1.0e7f;
+			uavLatitude = telemetryPacketMikrokopter.CurrentPosition.Latitude;
+			uavLongitude = telemetryPacketMikrokopter.CurrentPosition.Longitude;
 
 			if (telemetryPacketMikrokopter.Altimeter < 0) telemetryPacketMikrokopter.Altimeter = 0;
 			uavAltitude = telemetryPacketMikrokopter.Altimeter / 2;

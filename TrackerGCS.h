@@ -26,15 +26,15 @@
 const int battMonitorPin = A2;
 
 // Telemetry variables
-extern float			uavLatitude;                // latitude
-extern float			uavLongitude;               // longitude
+extern int32_t			uavLatitude;                // latitude
+extern int32_t			uavLongitude;               // longitude
 extern unsigned char    uavSatellitesVisible;		// number of satelites
 extern int16_t			uavAltitude;                // altitude (dm)
 
 // Home positioning data
-extern float homeLongitude;
-extern float homeLatitude;
-extern float uavDistanceToHome;
+extern int32_t homeLongitude;
+extern int32_t homeLatitude;
+extern int32_t uavDistanceToHome;
 extern unsigned int homeBearing;
 
 // Status indicators
