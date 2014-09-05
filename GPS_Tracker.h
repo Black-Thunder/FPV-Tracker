@@ -80,7 +80,7 @@ int16_t calculateBearing(int32_t lon1, int32_t lat1, int32_t lon2, int32_t lat2)
     return b; 
 }
 
-int16_t calculateElevation(float lon1, float lat1, float lon2, float lat2, int alt) {
+int16_t calculateElevation(int32_t alt) {
     float at = atan2(alt, uavDistanceToHome);
     at = at * 57.2957795;
     int16_t e = (int16_t)round(at);
@@ -90,6 +90,6 @@ int16_t calculateElevation(float lon1, float lat1, float lon2, float lat2, int a
 void calculateTrackingVariables(int32_t lon1, int32_t lat1, int32_t lon2, int32_t lat2, int32_t alt) {
 	//calculating Bearing & Elevation  in degree decimal
 	trackingBearing = calculateBearing(lon1, lat1, lon2, lat2);
-	trackingElevation = calculateElevation(lon1, lat1, lon2, lat2, alt);
+	trackingElevation = calculateElevation(alt);
 }
 #endif
