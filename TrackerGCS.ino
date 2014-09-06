@@ -113,7 +113,7 @@ unsigned char rssiTrack = 0;
 unsigned char rssiFix = 0;
 unsigned char rssiTrackOld = 0;
 
-unsigned char servoCommands[2] = { 0, horizontalMid };
+unsigned char servoCommands[2] = { verticalMid, horizontalMid };
 unsigned char previousServoCommands[2] = { -1, -1 };
 
 Servo VerticalServo;
@@ -534,7 +534,7 @@ void process1HzTask() {
 // Setup section
 // ================================================================
 
-void setup() { Serial.begin(115200);
+void setup() {
 #if defined LCD_AVAILABLE
 #if defined SMALL_LCD
         lcd.begin(16, 2);
