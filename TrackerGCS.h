@@ -49,11 +49,12 @@ extern unsigned int trackingBearing;
 extern unsigned int trackingElevation;
 
 const unsigned int verticalMin = 0;
-const unsigned int verticalMid = 60;
 const unsigned int verticalMax = 120;
-const unsigned int horizontalMin = 0;
-const unsigned int horizontalMid = 90;
-const unsigned int horizontalMax = 180;
+const unsigned int verticalMid = (verticalMin + verticalMax) / 2;
+
+const unsigned int horizontalMin = 15;
+const unsigned int horizontalMax = 170;
+const unsigned int horizontalMid = (horizontalMin + horizontalMax) / 2;
 const int rssiTrackPin = A0;
 const int rssiFixPin = A1;
 

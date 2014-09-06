@@ -235,7 +235,7 @@ void processUsart1Data(void)
 			uavLongitude = telemetryPacketAeroQuad.longitude;
 
 			if (telemetryPacketAeroQuad.altitude < 0) telemetryPacketAeroQuad.altitude = 0;
-			uavAltitude = telemetryPacketAeroQuad.altitude;
+			uavAltitude = telemetryPacketAeroQuad.altitude * 10;
 		}
 	}
 	else if (protocolType == MikrokopterProtocol) {
@@ -248,7 +248,7 @@ void processUsart1Data(void)
 			uavLongitude = telemetryPacketMikrokopter.CurrentPosition.Longitude;
 
 			if (telemetryPacketMikrokopter.Altimeter < 0) telemetryPacketMikrokopter.Altimeter = 0;
-			uavAltitude = telemetryPacketMikrokopter.Altimeter / 2;
+			uavAltitude = telemetryPacketMikrokopter.Altimeter * 5;
 		}
 	}
 

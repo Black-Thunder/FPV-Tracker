@@ -113,7 +113,7 @@ unsigned char rssiTrack = 0;
 unsigned char rssiFix = 0;
 unsigned char rssiTrackOld = 0;
 
-unsigned char servoCommands[2] = { verticalMid, horizontalMid };
+unsigned char servoCommands[2] = { 0, horizontalMid };
 unsigned char previousServoCommands[2] = { -1, -1 };
 
 Servo VerticalServo;
@@ -187,7 +187,7 @@ void setupHMC5883L(){
 	lcd.print("Configuring Mag...  ");
 
 	if (compass.isMagDetected) {
-		compass.SetScale(1.3); //Set the scale of the compass.
+		compass.SetScale(1.9); //Set the scale of the compass.
 		compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
 	}
 	else {
@@ -333,7 +333,7 @@ void processTracking() {
 					trackingBearing = horizontalMin;
 				}
 
-				trackingElevation = map(trackingElevation, 0, 90, verticalMin, verticalMax);
+				trackingElevation = map(trackingElevation, 0, 90, verticalMin, 180);
 
 				applyServoCommand(horizontalServo, trackingBearing);
 				applyServoCommand(verticalServo, trackingElevation);
@@ -534,7 +534,7 @@ void process1HzTask() {
 // Setup section
 // ================================================================
 
-void setup() {
+void setup() { Serial.begin(115200);
 #if defined LCD_AVAILABLE
 #if defined SMALL_LCD
         lcd.begin(16, 2);
@@ -544,7 +544,7 @@ void setup() {
 	lcd.createChar(1, badSmiley);
 #endif
 #endif
-
+        
 	VerticalServo.attach(verticalServoPin);
 	HorizontalServo.attach(horizontalServoPin);
 	writeServos(); // move servos to middle position on start-up

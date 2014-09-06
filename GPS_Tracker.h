@@ -66,9 +66,17 @@ void updateGCSHeading() {
 	//Get the reading from the HMC5883L and calculate the heading
 	MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
 
-	int angle = atan2(-scaled.YAxis, scaled.XAxis) / M_PI * 180; // angle is atan(-y/x)
-	if (angle < 0) angle = angle + 360;
-	homeBearing = angle;
+        //Calibration values (hard-coded)
+        scaled.XAxis *= 2.10;
+        scaled.XAxis += -341.10;
+        scaled.YAxis *= 1.10;
+        scaled.YAxis += 93.87;
+        float angle = atan2(scaled.YAxis, scaled. XAxis);
+        
+        if(angle < 0) angle += 2*PI;
+        if(angle > 2*PI) angle -= 2*PI;
+        
+        homeBearing = (int)round(angle * 180/M_PI);
 }
 
 int16_t calculateBearing(int32_t lon1, int32_t lat1, int32_t lon2, int32_t lat2) {
