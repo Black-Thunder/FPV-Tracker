@@ -58,14 +58,14 @@ unsigned char protocolType = AeroQuadProtocol;
 const unsigned char protocolTypeSwitchPin = 8; // Hardware switch to determine protocol type; LOW=AeroQuad, HIGH=Mikrokopter
 bool lastProtocolTypeSwitchState = LOW;
 
-float uavLatitude = GPS_INVALID_ANGLE;
-float uavLongitude = GPS_INVALID_ANGLE;
+int32_t uavLatitude = GPS_INVALID_ANGLE;
+int32_t uavLongitude = GPS_INVALID_ANGLE;
 unsigned char uavSatellitesVisible = 0;
 int16_t uavAltitude = GPS_INVALID_ALTITUDE;
 
-float homeLongitude = GPS_INVALID_ANGLE;
-float homeLatitude = GPS_INVALID_ANGLE;
-float uavDistanceToHome = 0;
+int32_t homeLongitude = GPS_INVALID_ANGLE;
+int32_t homeLatitude = GPS_INVALID_ANGLE;
+int32_t uavDistanceToHome = 0;
 unsigned int homeBearing = 0;
 
 unsigned int trackingBearing = 0;
@@ -113,7 +113,7 @@ unsigned char rssiTrack = 0;
 unsigned char rssiFix = 0;
 unsigned char rssiTrackOld = 0;
 
-unsigned char servoCommands[2] = { verticalMid, horizontalMid };
+unsigned char servoCommands[2] = { 0, horizontalMid };
 unsigned char previousServoCommands[2] = { -1, -1 };
 
 Servo VerticalServo;
@@ -187,7 +187,7 @@ void setupHMC5883L(){
 	lcd.print("Configuring Mag...  ");
 
 	if (compass.isMagDetected) {
-		compass.SetScale(1.3); //Set the scale of the compass.
+		compass.SetScale(1.9); //Set the scale of the compass.
 		compass.SetMeasurementMode(Measurement_Continuous); // Set the measurement mode to Continuous
 	}
 	else {
@@ -316,24 +316,24 @@ void processTracking() {
 				}
 
 				/* Map tracking variables to servo range
-				* trackingBearing: 0 = North, 90 = West, 180 = South, 270 = East
+				* trackingBearing: 0 = North, 90 = East, 180 = South, 270 = West
 				* trackingElevation: 0 = parallel to ground, 90 = straight up into the sky
 				* Servo angle: 0 = Maximum left/down, 90 = Mid, 180 = Maximum right/up
 				*/
 				if (trackingBearing >= 0 && trackingBearing <= 90) {
-					trackingBearing = map(trackingBearing, 90, 0, horizontalMin, horizontalMid);
+					trackingBearing = map(trackingBearing, 0, 90, horizontalMid, horizontalMax);
 				}
-				else if (trackingBearing >= 270 && trackingBearing <= 360) {
-					trackingBearing = map(trackingBearing, 360, 270, horizontalMid, horizontalMax);
+				else if (trackingBearing >= 270 && trackingBearing <= 359) {
+					trackingBearing = map(trackingBearing, 270, 360, horizontalMin, horizontalMid);
 				}
 				else if (trackingBearing > 90 && trackingBearing < 180) {
-					trackingBearing = horizontalMin;
-				}
-				else {
 					trackingBearing = horizontalMax;
 				}
+				else {
+					trackingBearing = horizontalMin;
+				}
 
-				trackingElevation = map(trackingElevation, verticalMin, verticalMax, 0, 180);
+				trackingElevation = map(trackingElevation, 0, 90, verticalMin, 180);
 
 				applyServoCommand(horizontalServo, trackingBearing);
 				applyServoCommand(verticalServo, trackingElevation);
@@ -534,7 +534,7 @@ void process1HzTask() {
 // Setup section
 // ================================================================
 
-void setup() {
+void setup() { Serial.begin(115200);
 #if defined LCD_AVAILABLE
 #if defined SMALL_LCD
         lcd.begin(16, 2);
@@ -544,7 +544,7 @@ void setup() {
 	lcd.createChar(1, badSmiley);
 #endif
 #endif
-
+        
 	VerticalServo.attach(verticalServoPin);
 	HorizontalServo.attach(horizontalServoPin);
 	writeServos(); // move servos to middle position on start-up

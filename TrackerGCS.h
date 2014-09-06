@@ -26,15 +26,15 @@
 const int battMonitorPin = A2;
 
 // Telemetry variables
-extern float			uavLatitude;                // latitude
-extern float			uavLongitude;               // longitude
+extern int32_t			uavLatitude;                // latitude
+extern int32_t			uavLongitude;               // longitude
 extern unsigned char    uavSatellitesVisible;		// number of satelites
 extern int16_t			uavAltitude;                // altitude (dm)
 
 // Home positioning data
-extern float homeLongitude;
-extern float homeLatitude;
-extern float uavDistanceToHome;
+extern int32_t homeLongitude;
+extern int32_t homeLatitude;
+extern int32_t uavDistanceToHome;
 extern unsigned int homeBearing;
 
 // Status indicators
@@ -49,11 +49,12 @@ extern unsigned int trackingBearing;
 extern unsigned int trackingElevation;
 
 const unsigned int verticalMin = 0;
-const unsigned int verticalMid = 60;
 const unsigned int verticalMax = 120;
-const unsigned int horizontalMin = 0;
-const unsigned int horizontalMid = 90;
-const unsigned int horizontalMax = 180;
+const unsigned int verticalMid = (verticalMin + verticalMax) / 2;
+
+const unsigned int horizontalMin = 15;
+const unsigned int horizontalMax = 170;
+const unsigned int horizontalMid = (horizontalMin + horizontalMax) / 2;
 const int rssiTrackPin = A0;
 const int rssiFixPin = A1;
 

@@ -22,6 +22,7 @@ HMC5883L compass;
 uint8_t countToInitHome = 0;
 
 const float R = 6371000.0;    //in meters. Earth radius 6371km
+float lonScaleDown = 0.0;
 
 unsigned long previousFixTime = 0;
 
@@ -37,6 +38,11 @@ bool isHomeBaseInitialized() {
 	return homeLatitude != GPS_INVALID_ANGLE;
 }
 
+void calculateLongitudeScaling(int32_t lat) {
+    float rads = (abs((float)lat) / 10000000.0) * 0.0174532925;
+    lonScaleDown = cos(rads);
+}
+
 void updateGCSPosition() {
 	if (haveNewGpsPosition()) {
 		clearNewGpsPosition();
@@ -45,8 +51,10 @@ void updateGCSPosition() {
 			countToInitHome++;
 		}
 		else {
-			homeLatitude = gpsData.lat / 1.0e7f;
-			homeLongitude = gpsData.lon / 1.0e7f;
+			homeLatitude = gpsData.lat;
+			homeLongitude = gpsData.lon;
+
+                        calculateLongitudeScaling(homeLongitude);
 
 			lcd.setCursor(0, 3);
 			lcd.print("Home position OK    ");
@@ -58,60 +66,38 @@ void updateGCSHeading() {
 	//Get the reading from the HMC5883L and calculate the heading
 	MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
 
-	int angle = atan2(-scaled.YAxis, scaled.XAxis) / M_PI * 180; // angle is atan(-y/x)
-	if (angle < 0) angle = angle + 360;
-	homeBearing = angle;
+        //Calibration values (hard-coded)
+        scaled.XAxis *= 2.10;
+        scaled.XAxis += -341.10;
+        scaled.YAxis *= 1.10;
+        scaled.YAxis += 93.87;
+        float angle = atan2(scaled.YAxis, scaled. XAxis);
+        
+        if(angle < 0) angle += 2*PI;
+        if(angle > 2*PI) angle -= 2*PI;
+        
+        homeBearing = (int)round(angle * 180/M_PI);
 }
 
-float toRad(float angle) {
-	// convert degrees to radians
-	return angle*0.01745329; // (angle/180)*pi
+int16_t calculateBearing(int32_t lon1, int32_t lat1, int32_t lon2, int32_t lat2) {
+    float dLat = (lat2 - lat1);
+    float dLon = (float)(lon2 - lon1) * lonScaleDown;
+    uavDistanceToHome = sqrt(sq(fabs(dLat)) + sq(fabs(dLon))) * 1.113195; // home dist in cm.
+    int16_t b = (int)round( -90 + (atan2(dLat, -dLon) * 57.295775));
+    if(b < 0) b += 360; 
+    return b; 
 }
 
-float toDeg(float angle) {
-	// convert radians to degrees.
-	return angle*57.29577951;   // (angle*180)/pi
+int16_t calculateElevation(int32_t alt) {
+    float at = atan2(alt, uavDistanceToHome);
+    at = at * 57.2957795;
+    int16_t e = (int16_t)round(at);
+    return e;
 }
 
-int calculateBearing(float lon1, float lat1, float lon2, float lat2) {
-	// bearing calc, feeded in radian, output degrees
-	float a;
-	a = atan2(sin(lon2 - lon1)*cos(lat2), cos(lat1)*sin(lat2) - sin(lat1)*cos(lat2)*cos(lon2 - lon1));
-	a = toDeg(a);
-
-	if (a < 0) a = 360 + a;
-	a = 360 - a;
-	return (int)round(a);
-}
-
-int calculateElevation(float lon1, float lat1, float lon2, float lat2, int alt) {
-	// feeded in radian, output in degrees
-	float a, el, c, d, dLat, dLon;
-	//calculating distance between uav & home	
-	dLat = (lat2 - lat1);
-	dLon = (lon2 - lon1);
-	a = sin(dLat / 2) * sin(dLat / 2) + sin(dLon / 2) * sin(dLon / 2) * cos(lat1) * cos(lat2);
-	c = 2 * asin(sqrt(a));
-	d = (R * c);
-	uavDistanceToHome = d;
-	el = atan((float)alt / (10 * d));// in radian
-	el = toDeg(el); // in degree
-	return (int)round(el);
-}
-
-void calculateTrackingVariables(float lon1, float lat1, float lon2, float lat2, int alt) {
-	// (homelon, homelat, uavlon, uavlat, uavalt ) 
-	// Return Bearing & Elevation angles in degree
-	// converting to radian
-	lon1 = toRad(lon1);
-	lat1 = toRad(lat1);
-	lon2 = toRad(lon2);
-	lat2 = toRad(lat2);
-
-	//calculating bearing in degree decimal
+void calculateTrackingVariables(int32_t lon1, int32_t lat1, int32_t lon2, int32_t lat2, int32_t alt) {
+	//calculating Bearing & Elevation  in degree decimal
 	trackingBearing = calculateBearing(lon1, lat1, lon2, lat2);
-
-	//calculating distance between uav & home
-	trackingElevation = calculateElevation(lon1, lat1, lon2, lat2, alt);
+	trackingElevation = calculateElevation(alt);
 }
 #endif
