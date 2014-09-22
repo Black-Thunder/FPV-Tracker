@@ -111,7 +111,7 @@ byte gmult(byte a, byte b)
 */
 
 void
-	decode_data(volatile uint8_t data[], int nbytes)
+decode_data(volatile uint8_t data[], int nbytes)
 {
 	int i, j, sum;
 	for (j = 0; j < NPAR; j++) {

@@ -285,7 +285,7 @@ void processTracking() {
 			else {
 				trackHorizontal();
 			}
-			
+
 			if (rssiTrack <= minTrackingValue) {
 				// Store current RSSI value and the corresponding servo positions
 				rssiTrackingVariablesMemory[rssiTrackingCounter][rssiIndex] = rssiTrack;
@@ -372,7 +372,7 @@ void writeServos() {
 #if defined LCD_AVAILABLE
 void printVoltage() {
 #if defined SMALL_LCD
-        lcd.setCursor(0, 2);
+	lcd.setCursor(0, 2);
 #else 
 	lcd.setCursor(0, 3);
 	lcd.print("Voltage: ");
@@ -421,7 +421,7 @@ void updateLCD() {
 		}
 	}
 #endif	
-        if (trackingMode == RSSITrackingMode) {
+	if (trackingMode == RSSITrackingMode) {
 		printVoltage();
 	}
 }
@@ -534,20 +534,31 @@ void process1HzTask() {
 // Setup section
 // ================================================================
 
-void setup() {
+void preSetup() {
 #if defined LCD_AVAILABLE
 #if defined SMALL_LCD
-        lcd.begin(16, 2);
+	lcd.begin(16, 2);
 #else
 	lcd.begin(20, 4);
 	lcd.createChar(0, okSmiley);
 	lcd.createChar(1, badSmiley);
 #endif
 #endif
-        
+
 	VerticalServo.attach(verticalServoPin);
 	HorizontalServo.attach(horizontalServoPin);
 	writeServos(); // move servos to middle position on start-up
+
+	lcd.setCursor(0, 0);
+	lcd.write("Antenna Tracking");
+	lcd.setCursor(0, 1);
+	lcd.write("Build: 22.09.14");
+
+	delay(2000); // Keep LCD message visible
+}
+
+void setup() {
+	preSetup();
 
 #if !defined PRO_MINI
 	determineTrackingMode();

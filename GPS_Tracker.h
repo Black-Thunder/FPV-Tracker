@@ -39,8 +39,8 @@ bool isHomeBaseInitialized() {
 }
 
 void calculateLongitudeScaling(int32_t lat) {
-    float rads = (abs((float)lat) / 10000000.0) * 0.0174532925;
-    lonScaleDown = cos(rads);
+	float rads = (abs((float)lat) / 10000000.0) * 0.0174532925;
+	lonScaleDown = cos(rads);
 }
 
 void updateGCSPosition() {
@@ -54,7 +54,7 @@ void updateGCSPosition() {
 			homeLatitude = gpsData.lat;
 			homeLongitude = gpsData.lon;
 
-                        calculateLongitudeScaling(homeLongitude);
+			calculateLongitudeScaling(homeLongitude);
 
 			lcd.setCursor(0, 3);
 			lcd.print("Home position OK    ");
@@ -66,33 +66,33 @@ void updateGCSHeading() {
 	//Get the reading from the HMC5883L and calculate the heading
 	MagnetometerScaled scaled = compass.ReadScaledAxis(); //scaled values from compass.
 
-        //Calibration values (hard-coded)
-        scaled.XAxis *= 2.10;
-        scaled.XAxis += -341.10;
-        scaled.YAxis *= 1.10;
-        scaled.YAxis += 93.87;
-        float angle = atan2(scaled.YAxis, scaled. XAxis);
-        
-        if(angle < 0) angle += 2*PI;
-        if(angle > 2*PI) angle -= 2*PI;
-        
-        homeBearing = (int)round(angle * 180/M_PI);
+	//Calibration values (hard-coded)
+	scaled.XAxis *= 2.10;
+	scaled.XAxis += -341.10;
+	scaled.YAxis *= 1.10;
+	scaled.YAxis += 93.87;
+	float angle = atan2(scaled.YAxis, scaled.XAxis);
+
+	if (angle < 0) angle += 2 * PI;
+	if (angle > 2 * PI) angle -= 2 * PI;
+
+	homeBearing = (int)round(angle * 180 / M_PI);
 }
 
 int16_t calculateBearing(int32_t lon1, int32_t lat1, int32_t lon2, int32_t lat2) {
-    float dLat = (lat2 - lat1);
-    float dLon = (float)(lon2 - lon1) * lonScaleDown;
-    uavDistanceToHome = sqrt(sq(fabs(dLat)) + sq(fabs(dLon))) * 1.113195; // home dist in cm.
-    int16_t b = (int)round( -90 + (atan2(dLat, -dLon) * 57.295775));
-    if(b < 0) b += 360; 
-    return b; 
+	float dLat = (lat2 - lat1);
+	float dLon = (float)(lon2 - lon1) * lonScaleDown;
+	uavDistanceToHome = sqrt(sq(fabs(dLat)) + sq(fabs(dLon))) * 1.113195; // home dist in cm.
+	int16_t b = (int)round(-90 + (atan2(dLat, -dLon) * 57.295775));
+	if (b < 0) b += 360;
+	return b;
 }
 
 int16_t calculateElevation(int32_t alt) {
-    float at = atan2(alt, uavDistanceToHome);
-    at = at * 57.2957795;
-    int16_t e = (int16_t)round(at);
-    return e;
+	float at = atan2(alt, uavDistanceToHome);
+	at = at * 57.2957795;
+	int16_t e = (int16_t)round(at);
+	return e;
 }
 
 void calculateTrackingVariables(int32_t lon1, int32_t lat1, int32_t lon2, int32_t lat2, int32_t alt) {
