@@ -552,7 +552,7 @@ void preSetup() {
 	lcd.setCursor(0, 0);
 	lcd.write("Antenna Tracking");
 	lcd.setCursor(0, 1);
-	lcd.write("Build: 22.09.14");
+	lcd.write("Build: 10.11.14");
 
 	delay(2000); // Keep LCD message visible
 }
