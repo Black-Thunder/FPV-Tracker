@@ -458,7 +458,9 @@ void checkSwitchState() {
 		determineProtocolType();
 	}
 }
+#endif
 
+#if defined(GPS_TRACKING)
 void requestMikrokopterTelemetryData() {
 	usart1_EnableTXD();
 
