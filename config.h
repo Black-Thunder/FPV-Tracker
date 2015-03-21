@@ -1,6 +1,6 @@
-//Target plattform
-#define MEGA // enables all features
-//#define PRO_MINI // very limited functionality, intended for small tracking stations
+//Tracking modes
+#define RSSI_TRACKING
+//#define GPS_TRACKING
 
 //Enable/disable diversity RSSI
 #define DIVERSITY

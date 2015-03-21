@@ -1,17 +1,7 @@
 #include "config.h"
 #include <Servo.h>
 #include "TrackerGCS.h"
-
-#if defined PRO_MINI
-#define RSSI_TRACKING
-
-unsigned char trackingMode = RSSITrackingMode;
-#endif
-
-#if defined MEGA
-#define GPS_TRACKING
-#define RSSI_TRACKING
-#endif
+#include "Arduino.h"
 
 #if defined LCD_AVAILABLE
 #include <LiquidCrystal.h>
@@ -43,8 +33,6 @@ unsigned char rssiTrackingVariablesMemory[memorySize][horizontalIndex + 1];
 unsigned char rssiTrackingCounter = 0;
 bool isRSSITrackingStopped = false;
 
-int calibrateTrack = 0;
-int calibrateFix = 0;
 unsigned char i = horizontalMid;
 unsigned char y = verticalMid;
 
@@ -77,8 +65,16 @@ long lastPacketReceived = 0;
 #endif
 
 // General
-#if !defined PRO_MINI
-unsigned char trackingMode = GPSTrackingMode;
+unsigned char trackingMode;
+
+unsigned char rssiTrack = 0;
+unsigned char rssiFix = 0;
+unsigned char rssiTrackOld = 0;
+
+int calibrateTrack = 0;
+int calibrateFix = 0;
+
+#if defined(GPS_TRACKING) && defined(RSSI_TRACKING)
 const unsigned char trackingModeSwitchPin = 9; // Hardware switch to determine tracking mode; LOW=RSSI, HIGH=GPS
 bool lastTrackingModeSwitchState = LOW;
 #endif
@@ -105,13 +101,9 @@ byte badSmiley[8] = {
 	B00000,
 	B01110,
 	B10001,
-	B00000
+
 };
 #endif
-
-unsigned char rssiTrack = 0;
-unsigned char rssiFix = 0;
-unsigned char rssiTrackOld = 0;
 
 unsigned char servoCommands[2] = { verticalMid, horizontalMid };
 unsigned char previousServoCommands[2] = { -1, -1 };
@@ -154,7 +146,7 @@ void calibrateRSSI() {
 #endif
 }
 
-#if !defined PRO_MINI
+#if defined(GPS_TRACKING)
 void determineProtocolType() {
 	if (digitalRead(protocolTypeSwitchPin) == HIGH) {
 		protocolType = MikrokopterProtocol;
@@ -223,8 +215,18 @@ void setupGPSTrackingMode() {
 
 	setupHMC5883L();
 }
+#endif
 
 void determineTrackingMode() {
+#if defined(GPS_TRACKING) && !defined(RSSI_TRACKING)
+        trackingMode = GPSTrackingMode;
+#endif
+
+#if !defined(GPS_TRACKING) && defined(RSSI_TRACKING)
+        trackingMode = RSSITrackingMode;
+#endif
+
+#if defined(GPS_TRACKING) && defined(RSSI_TRACKING)  
 	if (digitalRead(trackingModeSwitchPin) == HIGH) {
 		trackingMode = RSSITrackingMode;
 		lastTrackingModeSwitchState = HIGH;
@@ -241,10 +243,11 @@ void determineTrackingMode() {
 
 		setupGPSTrackingMode();
 	}
-}
 #endif
+}
 
 void processTracking() {
+#if defined(RSSI_TRACKING)
 	if (trackingMode == RSSITrackingMode) {
 		if (!isRSSITrackingStopped && rssiTrackingCounter >= memorySize) {
 			// Find highest RSSI value within the past 5 seconds and move servos to the corresponding position
@@ -300,7 +303,9 @@ void processTracking() {
 			isRSSITrackingStopped = false;
 		}
 	}
-#if !defined PRO_MINI
+#endif
+
+#if defined(GPS_TRACKING)
 	if (trackingMode == GPSTrackingMode) {
 		// Only move servo if home position is set, data link is OK and UAV has GPS fix, otherwise standby to last known position
 		if (isHomeBaseInitialized() && isTelemetryOk && uavHasGPSFix) {
@@ -390,11 +395,13 @@ void updateLCD() {
 	lcd.setCursor(0, 0);
 	lcd.print("RSSI Track ");
 	lcd.print(rssiTrack);
+
 #if defined DIVERSITY
 	lcd.setCursor(0, 1);
 	lcd.print("RSSI Fix   ");
 	lcd.print(rssiFix);
 #endif
+
 #if defined GPS_TRACKING
 	if (trackingMode == GPSTrackingMode) {
 		lcd.setCursor(0, 2);
@@ -421,9 +428,11 @@ void updateLCD() {
 		}
 	}
 #endif	
+#if defined RSSI_TRACKING
 	if (trackingMode == RSSITrackingMode) {
 		printVoltage();
 	}
+#endif
 }
 
 void measureBatteryVoltage() {
@@ -436,7 +445,7 @@ void measureBatteryVoltage() {
 }
 #endif
 
-#if !defined PRO_MINI
+#if defined(GPS_TRACKING) && defined(RSSI_TRACKING)
 void checkSwitchState() {
 	if (digitalRead(trackingModeSwitchPin) != lastTrackingModeSwitchState) {
 		lcd.clear();
@@ -473,7 +482,7 @@ void readRSSI() {
 }
 
 void process100HzTask() {
-#if !defined PRO_MINI
+#if defined(GPS_TRACKING)
 	if (trackingMode == GPSTrackingMode) {
 		updateGps();
 	}
@@ -485,7 +494,7 @@ void process50HzTask() {
 }
 
 void process10HzTask() {
-#if !defined PRO_MINI
+#if defined(GPS_TRACKING)
 	if (trackingMode == GPSTrackingMode) {
 		// Request data from MK, this is already done by C-OSD/Smart-OSD
 		//if (protocolType == MikrokopterProtocol) {
@@ -503,7 +512,7 @@ void process10HzTask() {
 }
 
 void process5HzTask() {
-#if !defined PRO_MINI
+#if defined(GPS_TRACKING)
 	if (trackingMode == GPSTrackingMode) {
 		if (!isHomeBaseInitialized() && isGPSConfigured) {
 			updateGCSPosition();
@@ -525,7 +534,7 @@ void process1HzTask() {
 	updateLCD();
 #endif
 
-#if !defined PRO_MINI
+#if defined(GPS_TRACKING) && defined(RSSI_TRACKING)
 	checkSwitchState();
 #endif
 }
@@ -552,18 +561,14 @@ void preSetup() {
 	lcd.setCursor(0, 0);
 	lcd.write("Antenna Tracking");
 	lcd.setCursor(0, 1);
-	lcd.write("Build: 10.11.14");
+	lcd.write("Built 21.03.15");
 
 	delay(2000); // Keep LCD message visible
 }
 
 void setup() {
 	preSetup();
-
-#if !defined PRO_MINI
 	determineTrackingMode();
-#endif
-
 	calibrateRSSI();
 }
 
