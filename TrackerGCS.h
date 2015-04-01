@@ -19,10 +19,7 @@
 
 #define AeroQuadProtocol 0
 #define MikrokopterProtocol 1
-
-#define battAREFValue          5.0				// Papa: 4.35 Ich: 5.0
-#define battResistorHigh       10.1  				
-#define battResistorLow        1.48				
+			
 const int battMonitorPin = A2;
 
 // Telemetry variables

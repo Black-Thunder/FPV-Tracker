@@ -563,7 +563,7 @@ void preSetup() {
 	lcd.setCursor(0, 0);
 	lcd.write("Antenna Tracking");
 	lcd.setCursor(0, 1);
-	lcd.write("Built 21.03.15");
+	lcd.write("Built 01.04.15");
 
 	delay(2000); // Keep LCD message visible
 }
