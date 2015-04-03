@@ -10,6 +10,6 @@
 //#define SMALL_LCD // = 16x2 LCD, otherwise 20x4
 
 //Battery Monitor tuning
-#define battAREFValue          5.0				// Papa: 4.35 Ich: 5.0
+#define battAREFValue          5.0
 #define battResistorHigh       10.1  				
 #define battResistorLow        1.48		
